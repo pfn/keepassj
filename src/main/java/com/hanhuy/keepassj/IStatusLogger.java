@@ -1,0 +1,100 @@
+package com.hanhuy.keepassj;
+/*
+  KeePass Password Safe - The Open-Source Password Manager
+  Copyright (C) 2003-2014 Dominik Reichl <dominik.reichl@t-online.de>
+
+  This program is free software; you can redistribute it and/or modify
+  it under the terms of the GNU General Public License as published by
+  the Free Software Foundation; either version 2 of the License, or
+  (at your option) any later version.
+
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  GNU General Public License for more details.
+
+  You should have received a copy of the GNU General Public License
+  along with this program; if not, write to the Free Software
+  Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
+*/
+
+	/// <summary>
+	/// Status message types.
+	/// </summary>
+	enum LogStatusType
+	{
+		/// <summary>
+		/// Default type: simple information type.
+		/// </summary>
+		Info,
+
+		/// <summary>
+		/// Warning message.
+		/// </summary>
+		Warning,
+
+		/// <summary>
+		/// Error message.
+		/// </summary>
+		Error,
+
+		/// <summary>
+		/// Additional information. Depends on lines above.
+		/// </summary>
+		AdditionalInfo
+	}
+
+	/// <summary>
+	/// Status logging interface.
+	/// </summary>
+	public interface IStatusLogger
+	{
+		/// <summary>
+		/// Function which needs to be called when logging is started.
+		/// </summary>
+		/// <param name="strOperation">This String should roughly describe
+		/// the operation, of which the status is logged.</param>
+		/// <param name="bWriteOperationToLog">Specifies whether the
+		/// operation is written to the log or not.</param>
+		void StartLogging(String strOperation, boolean bWriteOperationToLog);
+
+		/// <summary>
+		/// Function which needs to be called when logging is ended
+		/// (i.e. when no more messages will be logged and when the
+		/// percent value won't change any more).
+		/// </summary>
+		void EndLogging();
+
+		/// <summary>
+		/// Set the current progress in percent.
+		/// </summary>
+		/// <param name="uPercent">Percent of work finished.</param>
+		/// <returns>Returns <c>true</c> if the caller should continue
+		/// the current work.</returns>
+		boolean SetProgress(int uPercent);
+
+		/// <summary>
+		/// Set the current status text.
+		/// </summary>
+		/// <param name="strNewText">Status text.</param>
+		/// <param name="lsType">Type of the message.</param>
+		/// <returns>Returns <c>true</c> if the caller should continue
+		/// the current work.</returns>
+		boolean SetText(String strNewText, LogStatusType lsType);
+
+		/// <summary>
+		/// Check if the user cancelled the current work.
+		/// </summary>
+		/// <returns>Returns <c>true</c> if the caller should continue
+		/// the current work.</returns>
+		boolean ContinueWork();
+	}
+
+	class NullStatusLogger implements IStatusLogger
+	{
+		public void StartLogging(String strOperation, boolean bWriteOperationToLog) { }
+		public void EndLogging() { }
+		public boolean SetProgress(int uPercent) { return true; }
+		public boolean SetText(String strNewText, LogStatusType lsType) { return true; }
+		public boolean ContinueWork() { return true; }
+	}

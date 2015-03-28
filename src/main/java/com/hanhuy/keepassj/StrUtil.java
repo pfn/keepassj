@@ -316,7 +316,7 @@ public class StrUtil {
 
         int nPos = 0;
         while (nPos < str.length()) {
-            nPos = str.toLowerCase().indexOf(strFind, nPos);
+            nPos = str.toLowerCase().indexOf(strFind.toLowerCase(), nPos);
             if (nPos < 0) break;
 
 //            str = str.Remove(nPos, strFind.length());
@@ -1414,7 +1414,7 @@ public class StrUtil {
         return iCount;
     }
 
-    private static byte[] ArraysReverse(byte[] array) {
+    public static byte[] ArraysReverse(byte[] array) {
         for(int i = 0; i < array.length / 2; i++)
         {
             byte temp = array[i];

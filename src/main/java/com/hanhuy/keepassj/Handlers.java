@@ -53,7 +53,3 @@ import java.util.EventObject;
 	interface StrPwEntryDelegate {
         public String delegate(String str, PwEntry pe);
     }
-
-    interface EventHandler<T extends EventObject> {
-        public void delegate(Object sender, T e);
-    }

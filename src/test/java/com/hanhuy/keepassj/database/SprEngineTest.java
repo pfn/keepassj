@@ -17,54 +17,58 @@
  *  along with KeePassDroid.  If not, see <http://www.gnu.org/licenses/>.
  *
  */
-package com.hanhuy.keepassj;
+package com.hanhuy.keepassj.database;
+
+import com.google.common.io.BaseEncoding;
+import com.hanhuy.keepassj.PwDatabase;
+import com.hanhuy.keepassj.PwEntry;
+import com.hanhuy.keepassj.PwUuid;
+import com.hanhuy.keepassj.spr.SprCompileFlags;
+import com.hanhuy.keepassj.spr.SprContext;
+import com.hanhuy.keepassj.spr.SprEngine;
+import org.junit.BeforeClass;
+import org.junit.Test;
+
+import static org.junit.Assert.*;
 
 import java.io.InputStream;
 import java.util.UUID;
 
 public class SprEngineTest {
-/*
-	private PwDatabaseV4 db;
-	private SprEngine spr;
-	
-	@Override
-	protected void setUp() throws Exception {
-		super.setUp();
-		
-		Context ctx = getContext();
-		
-		AssetManager am = ctx.getAssets();
-		InputStream is = am.open("test.kdbx", AssetManager.ACCESS_STREAMING);
-		
-		ImporterV4 importer = new ImporterV4();
-		db = importer.openDatabase(is, "12345", "");
-		
-		is.close();
-		
-		spr = SprEngine.getInstance(db);
+	private static PwDatabase db;
+
+    @BeforeClass
+	public static void setUp() throws Exception {
+		db = TestData.GetDb1();
 	}
-	
+
+    private final String REFID = "2B1D56590D961F48A8CE8C392CE6CD35";
 	private final String REF = "{REF:P@I:2B1D56590D961F48A8CE8C392CE6CD35}";
 	private final String ENCODE_UUID = "IN7RkON49Ui1UZ2ddqmLcw==";
 	private final String RESULT = "Password";
+    @Test public void findReferenced() {
+        PwUuid uuid = new PwUuid(BaseEncoding.base16().decode(REFID));
+        PwEntry entry = db.getRootGroup().FindEntry(uuid, true);
+        assertNotNull(entry);
+    }
+    @Test
 	public void testRefReplace() {
-		UUID entryUUID = decodeUUID(ENCODE_UUID);
+		PwUuid entryUUID = decodeUUID(ENCODE_UUID);
 		
-		PwEntryV4 entry = (PwEntryV4) db.entries.get(entryUUID);
+		PwEntry entry = db.getRootGroup().FindEntry(entryUUID, true);
+        SprContext ctx = new SprContext(entry, db, SprCompileFlags.All.flags, false, false);
+        assertNotNull(entry);
+		assertEquals(RESULT, SprEngine.Compile(REF, ctx));
 
-		
-		assertEquals(RESULT, spr.compile(REF, entry, db));
-		
 	}
 	
-	private UUID decodeUUID(String encoded) {
+	private PwUuid decodeUUID(String encoded) {
 		if (encoded == null || encoded.length() == 0 ) {
-			return PwDatabaseV4.UUID_ZERO;
+			return PwUuid.Zero;
 		}
 		
-		byte[] buf = Base64Coder.decode(encoded);
-		return Types.bytestoUUID(buf);
+		byte[] buf = BaseEncoding.base64().decode(encoded);
+		return new PwUuid(buf);
 	}
 
-*/
 }

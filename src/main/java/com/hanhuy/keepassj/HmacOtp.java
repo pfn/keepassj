@@ -23,8 +23,6 @@ import org.bouncycastle.crypto.digests.SHA1Digest;
 import org.bouncycastle.crypto.macs.HMac;
 import org.bouncycastle.crypto.params.KeyParameter;
 
-import javax.crypto.Mac;
-
 /// <summary>
 /// Generate HMAC-based one-time passwords as specified in RFC 4226.
 /// </summary>

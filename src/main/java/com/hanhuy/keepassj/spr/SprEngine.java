@@ -24,11 +24,8 @@ import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.io.BaseEncoding;
 import com.hanhuy.keepassj.*;
-import com.sun.jndi.toolkit.url.Uri;
 
-import java.io.File;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.text.ParseException;

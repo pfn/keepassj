@@ -2,11 +2,13 @@ organization := "com.hanhuy.keepassj"
 
 name := "keepassj"
 
-version := "2.28.1"
+version := "2.28.2"
 
 crossPaths := false
 
 autoScalaLibrary := false
+
+javacOptions in (Compile,compile) ++= Seq("-source", "1.6", "-target", "1.6")
 
 libraryDependencies ++= Seq(
   "com.google.guava" % "guava" % "18.0",

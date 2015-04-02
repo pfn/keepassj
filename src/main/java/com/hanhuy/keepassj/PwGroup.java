@@ -947,20 +947,27 @@ import java.util.regex.Pattern;
 		private static void SearchEvalAdd(SearchParameters sp, String strDataField,
 			Pattern rx, PwEntry pe, PwObjectList<PwEntry> lResults)
 		{
-			boolean bMatch = false;
+            StringComparison mode = sp.getComparisonMode();
+            boolean ignoreCase =
+                    mode == StringComparison.OrdinalIgnoreCase ||
+                    mode == StringComparison.CurrentCultureIgnoreCase ||
+                    mode == StringComparison.InvariantCultureIgnoreCase;
+            boolean bMatch = false;
 
 			if(rx == null)
-				bMatch = (strDataField.indexOf(sp.getSearchString()
-					) >= 0);
+				bMatch = (ignoreCase ? strDataField.toLowerCase() : strDataField).contains(ignoreCase ? sp.getSearchString().toLowerCase() : sp.getSearchString());
 			else bMatch = rx.matcher(strDataField).matches();
 
 			if(!bMatch && (sp.getDataTransformationFn() != null))
 			{
 				String strCmp = sp.getDataTransformationFn().delegate(strDataField, pe);
-				if(strCmp != strDataField)
+				if(!strCmp.equals(strDataField))
 				{
 					if(rx == null)
-						bMatch = (strCmp.indexOf(sp.getSearchString()) >= 0);
+						bMatch = (ignoreCase ?
+                                strCmp.toLowerCase() : strCmp).contains(
+                                ignoreCase ?
+                                        sp.getSearchString().toLowerCase() : sp.getSearchString());
 					else bMatch = rx.matcher(strCmp).matches();
 				}
 			}

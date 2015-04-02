@@ -288,12 +288,3 @@ package com.hanhuy.keepassj;
 		DisableForms// = 16
 	}
 
-enum StringComparison {
-    CurrentCulture,
-        CurrentCultureIgnoreCase,
-        InvariantCulture,
-        InvariantCultureIgnoreCase,
-        Ordinal,
-        OrdinalIgnoreCase
-}
-

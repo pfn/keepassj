@@ -1562,7 +1562,7 @@ if (false) { // debug
 	private boolean HasDuplicateUuids()
 	{
 		int nTotal = GetTotalObjectUuidCount();
-		HashMap<PwUuid, Object> d = new HashMap<PwUuid, Object>(nTotal);
+		final HashMap<PwUuid, Object> d = new HashMap<PwUuid, Object>(nTotal);
 		final boolean[] bDupFound = { false };
 
 		GroupHandler gh = new GroupHandler() { public boolean delegate(PwGroup pg)
@@ -1601,7 +1601,7 @@ if (false) { // debug
 
 	private void FixDuplicateUuids() {
 		int nTotal = GetTotalObjectUuidCount();
-		HashMap<PwUuid, Object> d = new HashMap<PwUuid, Object>(nTotal);
+		final HashMap<PwUuid, Object> d = new HashMap<PwUuid, Object>(nTotal);
 
 		GroupHandler gh = new GroupHandler() { public boolean delegate(PwGroup pg)
 		{

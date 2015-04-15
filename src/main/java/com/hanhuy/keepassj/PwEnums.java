@@ -79,6 +79,26 @@ enum ProxyServerType
 		Manual
 	}
 
+enum ProxyAuthType
+{
+		None,
+
+		/// <summary>
+		/// Use default user credentials (provided by the system).
+		/// </summary>
+		Default,
+
+		Manual,
+
+		/// <summary>
+		/// <c>Default</c> or <c>Manual</c>, depending on whether
+		/// manual credentials are available.
+		/// This type exists for supporting upgrading from KeePass
+		/// 2.28 to 2.29; the user cannot select this type.
+		/// </summary>
+		Auto
+		}
+
 	/// <summary>
 	/// Comparison modes for in-memory protected objects.
 	/// </summary>
@@ -196,14 +216,28 @@ enum ProxyServerType
 		GetStdOutput,// = 1,
 		WaitForExit,// = 2,
 
-		// This flag prevents any handles being garbage-collected
-		// before the started process has terminated, without
-		// blocking the current thread;
 		// https://sourceforge.net/p/keepass/patches/84/
+		/// <summary>
+		/// This flag prevents any handles being garbage-collected
+		/// before the started process has terminated, without
+		/// blocking the current thread.
+		/// </summary>
 		GCKeepAlive,// = 4,
 
 		// https://sourceforge.net/p/keepass/patches/85/
 		DoEvents,// = 8,
 		DisableForms// = 16
 	}
+	//[Flags]
+	enum ScaleTransformFlags
+{
+		None,
+
+		/// <summary>
+		/// <c>UIIcon</c> indicates that the returned image is going
+		/// to be displayed as icon in the UI and that it is not
+		/// subject to future changes in size.
+		/// </summary>
+		UIIcon
+		}
 

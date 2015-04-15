@@ -18,40 +18,43 @@ package com.hanhuy.keepassj;
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-	/// <summary>
-	/// Custom icon. <c>PwCustomIcon</c> objects are immutable.
-	/// </summary>
-	public class PwCustomIcon
-	{
-		private PwUuid m_pwUuid;
-		private byte[] m_pbImageDataPng;
-		private Image m_pCachedImage;
+import java.util.HashMap;
 
-		public PwUuid getUuid()
-		{
-			return m_pwUuid;
-		}
+/// <summary>
+/// Custom icon. <c>PwCustomIcon</c> objects are immutable.
+/// </summary>
+public class PwCustomIcon
+{
+    private PwUuid m_pwUuid;
+    private byte[] m_pbImageDataPng;
 
-		public byte[] getImageDataPng()
-		{
-			return m_pbImageDataPng;
-		}
+    // Recommended maximum sizes, not obligatory
+    private final static int MaxWidth = 128;
+    private final static int MaxHeight = 128;
 
-		public Image getImage()
-		{
-			return m_pCachedImage;
-		}
+    public PwUuid getUuid()
+    {
+        return m_pwUuid;
+    }
 
-		public PwCustomIcon(PwUuid pwUuid, byte[] pbImageDataPng)
-		{
-			if(pwUuid == null) throw new IllegalArgumentException("pwUuid");
-			if(pwUuid.Equals(PwUuid.Zero)) throw new IllegalArgumentException("pwUuid == 0");
+    public byte[] getImageDataPng()
+    {
+        return m_pbImageDataPng;
+    }
 
-			if(pbImageDataPng == null) throw new IllegalArgumentException("pbImageDataPng");
 
-			m_pwUuid = pwUuid;
-			m_pbImageDataPng = pbImageDataPng;
+    public PwCustomIcon(PwUuid pwUuid, byte[] pbImageDataPng)
+    {
+        if(pwUuid == null) throw new IllegalArgumentException("pwUuid");
+        if(pwUuid.Equals(PwUuid.Zero)) throw new IllegalArgumentException("pwUuid == 0");
 
-			m_pCachedImage = null;
-		}
-	}
+        if(pbImageDataPng == null) throw new IllegalArgumentException("pbImageDataPng");
+
+        m_pwUuid = pwUuid;
+        m_pbImageDataPng = pbImageDataPng;
+
+    }
+    /// <summary>
+    /// Get the icon as an <c>Image</c> (original size).
+    /// </summary>
+}

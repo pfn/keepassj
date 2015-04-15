@@ -633,7 +633,7 @@ public class PwDatabase
 	/// </summary>
 	/// <param name="slLogger">Logger that recieves status information.</param>
 	public void Save(IStatusLogger slLogger) throws IOException {
-		assert ValidateUuidUniqueness();
+		assert !HasDuplicateUuids();
 
 		FileLock fl = null;
 		if(m_bUseFileLocks) fl = new FileLock(m_ioSource);
@@ -864,7 +864,7 @@ public class PwDatabase
 			ReorderGroups(ppOrgGroups, ppSrcGroups);
 			RelocateEntries(ppOrgEntries, ppSrcEntries);
 			ReorderEntries(ppOrgEntries, ppSrcEntries);
-			assert ValidateUuidUniqueness();
+			assert !HasDuplicateUuids();
 		}
 
 		// Must be called *after* merging groups, because group UUIDs
@@ -1480,11 +1480,11 @@ if (false) { // debug
 	/// </summary>
 	/// <param name="pwIconId">ID of the icon.</param>
 	/// <returns>Image data.</returns>
-	public Image GetCustomIcon(PwUuid pwIconId)
+	public byte[] GetCustomIcon(PwUuid pwIconId)
 	{
 		int nIndex = GetCustomIconIndex(pwIconId);
 
-		if(nIndex >= 0) return m_vCustomIcons.get(nIndex).getImage();
+		if(nIndex >= 0) return m_vCustomIcons.get(nIndex).getImageDataPng();
 		else { assert false; return null; }
 	}
 
@@ -1551,33 +1551,97 @@ if (false) { // debug
 			RemoveCustomIconUuid(peHistory, vToDelete);
 	}
 
-	private boolean ValidateUuidUniqueness()
+	private int GetTotalObjectUuidCount()
 	{
-if(false) {
-		final List<PwUuid> l = new ArrayList<PwUuid>();
-		final boolean[] bAllUnique = { true };
+		int[] uGroups = new int[1], uEntries = new int[1];
+		m_pgRootGroup.GetCounts(true, uGroups, uEntries);
+		long uTotal = uGroups[0] + uEntries[0] + 1l; // 1 for root group
+		if(uTotal > 0x7FFFFFFF) { assert(false); return 0x7FFFFFFF; }
+		return (int)uTotal;
+	}
+	private boolean HasDuplicateUuids()
+	{
+		int nTotal = GetTotalObjectUuidCount();
+		HashMap<PwUuid, Object> d = new HashMap<PwUuid, Object>(nTotal);
+		final boolean[] bDupFound = { false };
 
 		GroupHandler gh = new GroupHandler() { public boolean delegate(PwGroup pg)
 		{
-			for(PwUuid u : l)
-				bAllUnique[0] &= !pg.getUuid().equals(u);
-			l.add(pg.getUuid());
-			return bAllUnique[0];
+			PwUuid pu = pg.getUuid();
+			if(d.containsKey(pu))
+			{
+				bDupFound[0] = true;
+				return false;
+			}
+
+			d.put(pu, null);
+			assert(d.containsKey(pu));
+			return true;
 		}};
 
 		EntryHandler eh = new EntryHandler() { public boolean delegate(PwEntry pe)
 		{
-			for(PwUuid u : l)
-				bAllUnique[0] &= !pe.getUuid().Equals(u);
-			l.add(pe.getUuid());
-			return bAllUnique[0];
+			PwUuid pu = pe.getUuid();
+			if(d.containsKey(pu))
+			{
+				bDupFound[0] = true;
+				return false;
+			}
+
+			d.put(pu, null);
+			assert(d.containsKey(pu));
+			return true;
 		}};
+		gh.delegate(m_pgRootGroup);
 
 		m_pgRootGroup.TraverseTree(TraversalMethod.PreOrder, gh, eh);
-		return bAllUnique[0];
-} else {
-		return true;
-}
+		assert(bDupFound[0] || (d.size() == nTotal));
+		return bDupFound[0];
+	}
+
+	private void FixDuplicateUuids() {
+		int nTotal = GetTotalObjectUuidCount();
+		HashMap<PwUuid, Object> d = new HashMap<PwUuid, Object>(nTotal);
+
+		GroupHandler gh = new GroupHandler() { public boolean delegate(PwGroup pg)
+		{
+			PwUuid pu = pg.getUuid();
+			if (d.containsKey(pu)) {
+				pu = new PwUuid(true);
+				while (d.containsKey(pu)) {
+					assert(false);
+					pu = new PwUuid(true);
+				}
+
+				pg.setUuid(pu);
+			}
+
+			d.put(pu, null);
+			return true;
+		}} ;
+
+		EntryHandler eh = new EntryHandler() { public boolean delegate(PwEntry pe)
+		{
+			PwUuid pu = pe.getUuid();
+			if (d.containsKey(pu)) {
+				pu = new PwUuid(true);
+				while (d.containsKey(pu)) {
+					assert(false);
+					pu = new PwUuid(true);
+				}
+
+				pe.SetUuid(pu, true);
+			}
+
+			d.put(pu, null);
+			return true;
+		}};
+
+		gh.delegate(m_pgRootGroup);
+		m_pgRootGroup.TraverseTree(TraversalMethod.PreOrder, gh, eh);
+
+		assert d.size() == nTotal;
+		assert !HasDuplicateUuids();
 	}
 
 	/* public void CreateBackupFile(IStatusLogger sl)

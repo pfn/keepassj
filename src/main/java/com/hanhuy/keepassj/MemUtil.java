@@ -321,7 +321,7 @@ import java.util.zip.GZIPOutputStream;
 
 			for(int i = iStart; i < m; ++i)
 			{
-				u ^= m_vSBox[v[i]];
+				u ^= m_vSBox[bint(v[i])];
 				u *= 3;
 			}
 

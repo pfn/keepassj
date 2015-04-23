@@ -347,12 +347,3 @@ import java.util.List;
 		}
 	}
 
-	class InvalidCompositeKeyException extends RuntimeException
-	{
-        public InvalidCompositeKeyException() {
-        }
-
-        public InvalidCompositeKeyException(String message) {
-            super(message);
-        }
-    }

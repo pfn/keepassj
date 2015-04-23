@@ -22,57 +22,54 @@ package com.hanhuy.keepassj.database;
 import com.google.common.base.Strings;
 import com.hanhuy.keepassj.*;
 
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.InputStream;
 
 public class TestData {
-	private static final String TEST1_KEYFILE = "";
-	private static final String TEST1_KDB = "test1.kdb";
-	private static final String TEST1_PASSWORD = "12345";
-    private static final String TEST_KDBX = "test.kdbx";
+	public static final String TEST1_KEYFILE = "";
+	public static final String TEST1_PASSWORD = "12345";
+    public static final String TEST_KDBX = "test.kdbx";
 
-	private static PwDatabase mDb1;
-
-	
 	public static PwDatabase GetDb1() throws Exception {
 		return GetDb1(false);
 	}
 	
-	public static PwDatabase GetDb2(boolean forceReload) throws Exception {
-		if ( mDb1 == null || forceReload ) {
-			mDb1 = GetDb(TEST1_KDB, TEST1_PASSWORD, TEST1_KEYFILE);
-		}
-		
-		return mDb1;
-	}
     public static PwDatabase GetDb1(boolean forceReload) throws Exception {
-        if ( mDb1 == null || forceReload ) {
-            mDb1 = GetDb(TEST_KDBX, TEST1_PASSWORD, TEST1_KEYFILE);
-        }
-
-        return mDb1;
+		return GetDb(TEST_KDBX, TEST1_PASSWORD, TEST1_KEYFILE);
     }
 
-	public static PwDatabase GetDb(String asset, String password, String keyfile) throws Exception {
-		InputStream is = TestData.class.getClassLoader().getResourceAsStream(asset);
-
+	public static PwDatabase GetDb(File f, String password, String keyfile) throws Exception {
 		PwDatabase Db = new PwDatabase();
-        CompositeKey key = new CompositeKey();
-        key.AddUserKey(new KcpPassword(password));
-        if (!Strings.isNullOrEmpty(keyfile)) {
-            key.AddUserKey(new KcpKeyFile(keyfile));
-        }
-        Db.setMasterKey(key);
-        KdbxFile file = new KdbxFile(Db);
-        file.Load(is, KdbxFormat.Default, null);
+		CompositeKey key = new CompositeKey();
+		key.AddUserKey(new KcpPassword(password));
+		if (!Strings.isNullOrEmpty(keyfile)) {
+			key.AddUserKey(new KcpKeyFile(keyfile));
+		}
+		Db.Open(IOConnectionInfo.FromPath(f.getAbsolutePath()), key, null);
+		return Db;
+	}
+	public static PwDatabase GetDb(InputStream is, String password, String keyfile) throws Exception {
+		PwDatabase Db = new PwDatabase();
+		CompositeKey key = new CompositeKey();
+		key.AddUserKey(new KcpPassword(password));
+		if (!Strings.isNullOrEmpty(keyfile)) {
+			key.AddUserKey(new KcpKeyFile(keyfile));
+		}
+		Db.setMasterKey(key);
+		KdbxFile file = new KdbxFile(Db);
+		file.Load(is, KdbxFormat.Default, null);
+		is.close();
 		return Db;
 	}
 
+	public static PwDatabase GetDb(String asset, String password, String keyfile) throws Exception {
+		InputStream is = TestData.class.getClassLoader().getResourceAsStream(asset);
+		return GetDb(is, password, keyfile);
+	}
+
 	public static PwDatabase GetTest2() throws Exception {
-		if ( mDb1 == null ) {
-			GetDb1();
-		}
-		
-		return mDb1;
+        return GetDb1();
 	}
 
     public static PwDatabase GetTest1() throws Exception {

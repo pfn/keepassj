@@ -20,8 +20,6 @@ package com.hanhuy.keepassj;
 
 import com.google.common.base.Strings;
 import com.google.common.io.BaseEncoding;
-import scala.Int;
-import scala.util.parsing.input.StreamReader;
 
 import java.io.*;
 import java.util.Date;

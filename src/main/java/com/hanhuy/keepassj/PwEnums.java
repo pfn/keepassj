@@ -57,21 +57,6 @@ package com.hanhuy.keepassj;
 		PreOrder
 	}
 
-	/// <summary>
-	/// Methods for merging password databases/entries.
-	/// </summary>
-	enum PwMergeMethod
-	{
-		// Do not change the explicitly assigned values, otherwise
-		// serialization (e.g. of Ecas triggers) breaks
-		None,
-		OverwriteExisting,
-		KeepExisting,
-		OverwriteIfNewer,
-		CreateNewUuids,
-		Synchronize
-	}
-
 enum ProxyServerType
 	{
 		None,

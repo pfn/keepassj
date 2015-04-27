@@ -18,6 +18,7 @@ package com.hanhuy.keepassj;
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+import com.google.common.base.Objects;
 import com.google.common.base.Strings;
 import com.google.common.collect.Maps;
 import com.google.common.io.BaseEncoding;
@@ -877,7 +878,7 @@ import java.util.zip.GZIPOutputStream;
         switch(ctx)
         {
             case Null:
-                if(Objects.equals(xr.getName(), ElemDocNode))
+                if(Objects.equal(xr.getName(), ElemDocNode))
                     return SwitchContext(ctx, KdbContext.KeePassFile, xr);
                 else ReadUnknown(xr);
                 break;

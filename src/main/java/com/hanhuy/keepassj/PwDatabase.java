@@ -18,6 +18,7 @@ package com.hanhuy.keepassj;
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+import com.google.common.base.Objects;
 import com.google.common.collect.Maps;
 
 import java.io.IOException;
@@ -493,7 +494,7 @@ public class PwDatabase
 	/// </summary>
 	public PwDatabase()
 	{
-		if(m_bPrimaryCreated == false) m_bPrimaryCreated = true;
+		if(!m_bPrimaryCreated) m_bPrimaryCreated = true;
 
 		Clear();
 	}
@@ -755,7 +756,7 @@ public class PwDatabase
 					assert pg == pdSource.m_pgRootGroup;
 					pgLocalContainer = m_pgRootGroup;
 				}
-				else if(pgSourceParent == pdSource.m_pgRootGroup)
+				else if(Objects.equal(pgSourceParent, pdSource.m_pgRootGroup))
 					pgLocalContainer = m_pgRootGroup;
 				else
 					pgLocalContainer = m_pgRootGroup.FindGroup(pgSourceParent.getUuid(), true);
@@ -792,7 +793,7 @@ public class PwDatabase
 			{
 				PwGroup pgSourceParent = pe.getParentGroup();
 				PwGroup pgLocalContainer;
-				if(pgSourceParent == pdSource.m_pgRootGroup)
+				if(Objects.equal(pgSourceParent, pdSource.m_pgRootGroup))
 					pgLocalContainer = m_pgRootGroup;
 				else
 					pgLocalContainer = m_pgRootGroup.FindGroup(pgSourceParent.getUuid(), true);
@@ -1294,7 +1295,7 @@ if (false) { // debug
 		for(int u = 0; u < vItems.getUCount(); ++u)
 		{
 			IStructureItem pt = vItems.GetAt(u);
-			assert pt.getParentGroup() == ptFirst.getParentGroup();
+			assert Objects.equal(pt.getParentGroup(), ptFirst.getParentGroup());
 
 			if(!pt.getUuid().Equals(lOrg.get((int) u).getUuid())) return true;
 			if(!pt.getUuid().Equals(lSrc.get((int) u).getUuid())) return true;
@@ -1371,8 +1372,8 @@ if (false) { // debug
 			boolean bEqual = true;
 			for(int uEnum = 0; uEnum < pe.getHistory().getUCount(); ++uEnum)
 			{
-				if(pe.getHistory().GetAt(uEnum).getLastModificationTime().getTime() !=
-					peSource.getHistory().GetAt(uEnum).getLastModificationTime().getTime())
+				if(!Objects.equal(pe.getHistory().GetAt(uEnum).getLastModificationTime().getTime(),
+					peSource.getHistory().GetAt(uEnum).getLastModificationTime().getTime()))
 				{
 					bEqual = false;
 					break;

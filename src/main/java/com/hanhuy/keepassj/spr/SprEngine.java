@@ -18,6 +18,7 @@ package com.hanhuy.keepassj.spr;
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+import com.google.common.base.Objects;
 import com.google.common.base.Predicate;
 import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
@@ -773,9 +774,9 @@ import java.util.*;
 						byte[] pbUtf8 = strNew.getBytes(StrUtil.Utf8);
 						strNew = MemUtil.ByteArrayToHexString(pbUtf8);
 					}
-					else if(strCmd == "uri")
+					else if(Objects.equal(strCmd, "uri"))
 						strNew = URLDecoder.decode(strNew, "utf-8");
-					else if(strCmd == "uri-dec")
+					else if(Objects.equal(strCmd, "uri-dec"))
 						strNew = URLEncoder.encode(strNew, "utf-8");
 
 					strNew = TransformContent(strNew, ctx);

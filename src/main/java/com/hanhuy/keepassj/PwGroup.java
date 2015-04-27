@@ -396,7 +396,7 @@ import java.util.regex.Pattern;
 			if(!pwOpt.contains(PwCompareOptions.IgnoreParentGroup))
 			{
 				if(m_pParentGroup != pg.m_pParentGroup) return false;
-				if(!bIgnoreLastMod && (m_tParentGroupLastMod != pg.m_tParentGroupLastMod))
+				if(!bIgnoreLastMod && (!Objects.equal(m_tParentGroupLastMod, pg.m_tParentGroupLastMod)))
 					return false;
 			}
 
@@ -406,16 +406,16 @@ import java.util.regex.Pattern;
 			if(m_pwIcon != pg.m_pwIcon) return false;
 			if(!m_pwCustomIconID.Equals(pg.m_pwCustomIconID)) return false;
 
-			if(m_tCreation != pg.m_tCreation) return false;
-			if(!bIgnoreLastMod && (m_tLastMod != pg.m_tLastMod)) return false;
-			if(!bIgnoreLastAccess && (m_tLastAccess != pg.m_tLastAccess)) return false;
-			if(m_tExpire != pg.m_tExpire) return false;
+			if(!Objects.equal(m_tCreation, pg.m_tCreation)) return false;
+			if(!bIgnoreLastMod && (!Objects.equal(m_tLastMod, pg.m_tLastMod))) return false;
+			if(!bIgnoreLastAccess && (!Objects.equal(m_tLastAccess, pg.m_tLastAccess))) return false;
+			if(!Objects.equal(m_tExpire, pg.m_tExpire)) return false;
 			if(m_bExpires != pg.m_bExpires) return false;
 			if(!bIgnoreLastAccess && (m_uUsageCount != pg.m_uUsageCount)) return false;
 
 			// if(m_bIsExpanded != pg.m_bIsExpanded) return false;
 
-			if(m_strDefaultAutoTypeSequence != pg.m_strDefaultAutoTypeSequence) return false;
+			if(!m_strDefaultAutoTypeSequence.equals(pg.m_strDefaultAutoTypeSequence)) return false;
 
             if(m_bEnableAutoType != pg.m_bEnableAutoType) return false;
             if(m_bEnableSearching != pg.m_bEnableSearching) return false;
@@ -1121,7 +1121,7 @@ import java.util.regex.Pattern;
 
 			for(PwGroup pg : m_listGroups)
 			{
-				if(pg.getName() == strName) return pg;
+				if(Objects.equal(pg.getName(), strName)) return pg;
 			}
 
 			if(!bCreateIfNotFound) return null;

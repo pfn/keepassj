@@ -18,6 +18,8 @@ package com.hanhuy.keepassj;
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+import com.google.common.base.Objects;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -115,7 +117,7 @@ import java.util.List;
 		public int GetCipherIndex(String strDisplayName)
 		{
 			for(int i = 0; i < m_vCiphers.size(); ++i)
-				if(m_vCiphers.get(i).getDisplayName() == strDisplayName)
+				if(Objects.equal(m_vCiphers.get(i).getDisplayName(), strDisplayName))
 					return i;
 
 			assert false;

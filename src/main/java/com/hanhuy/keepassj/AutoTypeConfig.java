@@ -68,8 +68,8 @@ import java.util.List;
 		{
 			if(other == null) return false;
 
-			if(m_strWindow != other.m_strWindow) return false;
-			if(m_strSequence != other.m_strSequence) return false;
+			if(!m_strWindow.equals(other.m_strWindow)) return false;
+			if(!m_strSequence.equals(other.m_strSequence)) return false;
 
 			return true;
 		}
@@ -178,7 +178,7 @@ import java.util.List;
 
 			if(m_bEnabled != other.m_bEnabled) return false;
 			if(m_atooObfuscation != other.m_atooObfuscation) return false;
-			if(m_strDefaultSequence != other.m_strDefaultSequence) return false;
+			if(!m_strDefaultSequence.equals(other.m_strDefaultSequence)) return false;
 
 			if(m_lWindowAssocs.size() != other.m_lWindowAssocs.size()) return false;
 			for(int i = 0; i < m_lWindowAssocs.size(); ++i)

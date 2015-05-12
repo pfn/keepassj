@@ -28,22 +28,22 @@ import java.util.List;
 
 public class DeleteEntry {
 	private static final String GROUP1_NAME = "General";
-	private static final String ENTRY1_NAME = "Test1";
-	private static final String ENTRY2_NAME = "Test2";
+	private static final String ENTRY1_NAME = "ba842191-c613-4cbb-b5cc-bdf4b61dd235";
+	private static final String ENTRY2_NAME = "8e117b5c-33ee-4ea5-8ed5-3f4064d69ac2";
 	private static final String KEYFILE = "";
 	private static final String PASSWORD = "12345";
 	private static final String ASSET = "test.kdbx";
 
     @Test
 	public void testDelete() throws Exception {
-		
+
 		PwDatabase db;
-		
+
         db = TestData.GetDb(ASSET, PASSWORD, KEYFILE);
 
 		PwGroup group1 = getGroup(db, GROUP1_NAME);
 		assertNotNull("Could not find group1", group1);
-		
+
 		// Delete the group
         group1.getParentGroup().getGroups().Remove(group1);
 
@@ -53,26 +53,36 @@ public class DeleteEntry {
 
 		PwEntry entry2 = getEntry(db, ENTRY2_NAME);
 		assertNull("Entry 2 was not removed", entry2);
-		
+
 		// Verify the entries were removed from the search index
 		// Verify the group was deleted
 		group1 = getGroup(db, GROUP1_NAME);
 		assertNull("Group 1 was not removed.", group1);
 	}
-	
+
+	@Test
+	public void testEntryDelete() throws Exception {
+		PwDatabase db = TestData.GetDb(ASSET, PASSWORD, KEYFILE);
+		PwEntry entry = getEntry(db, ENTRY1_NAME);
+		assertNotNull(entry);
+		PwGroup recycle = db.getRootGroup().FindGroup(db.getRecycleBinUuid(), true);
+		assertTrue(db.isRecycleBinEnabled());
+		assertNotNull(recycle);
+	}
+
 	private PwEntry getEntry(PwDatabase pm, String name) {
-		PwObjectList<PwEntry> entries = pm.getRootGroup().getEntries();
+		PwObjectList<PwEntry> entries = pm.getRootGroup().GetEntries(true);
 		for ( int i = 0; i < entries.getUCount(); i++ ) {
 			PwEntry entry = entries.GetAt(i);
 			if ( entry.getStrings().ReadSafe(PwDefs.TitleField).equals(name) ) {
 				return entry;
 			}
 		}
-		
+
 		return null;
-		
+
 	}
-	
+
 	private PwGroup getGroup(PwDatabase pm, String name) {
 		PwObjectList<PwGroup> groups = pm.getRootGroup().GetGroups(true);
 		for ( int i = 0; i < groups.getUCount(); i++ ) {
@@ -81,9 +91,9 @@ public class DeleteEntry {
 				return group;
 			}
 		}
-		
+
 		return null;
 	}
-	
+
 
 }

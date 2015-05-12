@@ -1746,7 +1746,8 @@ import java.util.zip.GZIPOutputStream;
 //        m_xmlWriter.Formatting = Formatting.Indented;
 //        m_xmlWriter.IndentChar = '\t';
 //        m_xmlWriter.Indentation = 1;
-        m_xmlWriter.setProperty("http://xmlpull.org/v1/doc/properties.html#serializer-indentation", "\t");
+// unsupported on android
+//        m_xmlWriter.setProperty("http://xmlpull.org/v1/doc/properties.html#serializer-indentation", "\t");
 
         m_xmlWriter.startDocument("utf-8", true);
         m_xmlWriter.startTag(null, ElemDocNode);

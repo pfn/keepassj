@@ -2,7 +2,7 @@ organization := "com.hanhuy.keepassj"
 
 name := "keepassj"
 
-version := "2.29.3"
+version := "2.29.4"
 
 crossPaths := false
 

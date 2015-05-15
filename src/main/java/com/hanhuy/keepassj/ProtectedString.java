@@ -321,4 +321,21 @@ import java.util.Arrays;
 			MemUtil.ZeroByteArray(pbNew);
 			return ps;
 		}
+
+		@Override
+		public boolean equals(Object o) {
+			if (this == o) return true;
+			if (o == null || getClass() != o.getClass()) return false;
+
+			ProtectedString that = (ProtectedString) o;
+
+			return m_bIsProtected == that.m_bIsProtected &&
+					ReadString().equals(that.ReadString());
+
+		}
+
+		@Override
+		public int hashCode() {
+			return ReadString().hashCode();
+		}
 	}

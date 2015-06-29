@@ -117,7 +117,7 @@ import java.io.*;
 
 			if(pbKey == null)
 			{
-				pbKey = KdbxFile.sha256().digest(pbFileData);
+				pbKey = Digests.sha256(pbFileData);
 			}
 
 			return pbKey;
@@ -174,7 +174,7 @@ import java.io.*;
 				ms.write(pbAdditionalEntropy, 0, pbAdditionalEntropy.length);
 				ms.write(pbKey32, 0, 32);
 
-				pbFinalKey32 = KdbxFile.sha256().digest(ms.toByteArray());
+				pbFinalKey32 = Digests.sha256(ms.toByteArray());
 			}
 
 			CreateXmlKeyFile(strFilePath, pbFinalKey32);

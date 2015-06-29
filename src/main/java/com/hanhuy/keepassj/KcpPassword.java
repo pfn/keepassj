@@ -59,7 +59,7 @@ package com.hanhuy.keepassj;
 			assert pbPasswordUtf8 != null;
 			if(pbPasswordUtf8 == null) throw new IllegalArgumentException("pbPasswordUtf8");
 
-			byte[] pbRaw = KdbxFile.sha256().digest(pbPasswordUtf8);
+			byte[] pbRaw = Digests.sha256(pbPasswordUtf8);
 
 			m_psPassword = new ProtectedString(true, pbPasswordUtf8);
 			m_pbKeyData = new ProtectedBinary(true, pbRaw);

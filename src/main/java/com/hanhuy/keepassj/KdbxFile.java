@@ -527,7 +527,7 @@ import java.util.zip.GZIPOutputStream;
                 br.setCopyDataTo(null);
                 byte[] pbHeader = msHeader.toByteArray();
                 msHeader.close();
-                m_pbHashOfHeader = sha256().digest(pbHeader);
+                m_pbHashOfHeader = Digests.sha256(pbHeader);
             }
 
             private boolean ReadHeaderField(BinaryReaderEx brSource)
@@ -649,7 +649,7 @@ import java.util.zip.GZIPOutputStream;
                     throw new SecurityException("invalid composite key");
                 ms.write(pKey32, 0, 32);
 
-                byte[] aesKey = sha256().digest(ms.toByteArray());
+                byte[] aesKey = Digests.sha256(ms.toByteArray());
 
                 Arrays.fill(pKey32, 0, 32, (byte)0);
 
@@ -1681,7 +1681,7 @@ import java.util.zip.GZIPOutputStream;
         byte[] pbHeader = ms.toByteArray();
         ms.close();
 
-        m_pbHashOfHeader = sha256().digest(pbHeader);
+        m_pbHashOfHeader = Digests.sha256(pbHeader);
 
         s.write(pbHeader, 0, pbHeader.length);
         s.flush();
@@ -1721,7 +1721,7 @@ import java.util.zip.GZIPOutputStream;
             throw new SecurityException("Invalid composite key");
         ms.write(pKey32, 0, 32);
 
-        byte[] aesKey = sha256().digest(ms.toByteArray());
+        byte[] aesKey = Digests.sha256(ms.toByteArray());
 
         ms.close();
         Arrays.fill(pKey32, 0, 32, (byte)0);
@@ -2316,12 +2316,4 @@ import java.util.zip.GZIPOutputStream;
         f.Save(msOutput, null, KdbxFormat.PlainXml, null);
         return true;
     }
-
-        public static MessageDigest sha256() {
-            try {
-                return MessageDigest.getInstance("SHA-256");
-            } catch (Exception e) {
-                throw new IllegalStateException(e);
-            }
-        }
 }

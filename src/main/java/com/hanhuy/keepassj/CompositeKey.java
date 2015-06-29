@@ -22,7 +22,6 @@ import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.params.KeyParameter;
 
 import java.io.ByteArrayOutputStream;
-import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -162,13 +161,7 @@ import java.util.List;
 				}
 			}
 
-            try {
-                MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
-                byte[] pbHash = sha256.digest(ms.toByteArray());
-                return pbHash;
-            } catch (Exception e) {
-                throw new RuntimeException(e);
-            }
+			return Digests.sha256(ms.toByteArray());
 		}
 
 		public boolean EqualsValue(CompositeKey ckOther)
@@ -249,10 +242,7 @@ import java.util.List;
 			if(!TransformKeyManaged(pbNewKey, pbKeySeed32, uNumRounds))
 				return null;
 
-            try {
-                MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
-                return sha256.digest(pbNewKey);
-            } catch (Exception e) { throw new RuntimeException(e); }
+			return Digests.sha256(pbNewKey);
 		}
 
 		public static boolean TransformKeyManaged(byte[] pbNewKey32, byte[] pbKeySeed32,

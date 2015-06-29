@@ -18,8 +18,6 @@ package com.hanhuy.keepassj;
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-import java.security.MessageDigest;
-
 /// <summary>
 	/// Algorithms supported by <c>CryptoRandomStream</c>.
 	/// </summary>
@@ -104,8 +102,7 @@ import java.security.MessageDigest;
 			else if(genAlgorithm == CrsAlgorithm.Salsa20)
 			{
                 try {
-                    MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
-                    byte[] pbKey32 = sha256.digest(pbKey);
+                    byte[] pbKey32 = Digests.sha256(pbKey);
                     byte[] pbIV = new byte[]{(byte) 0xE8, 0x30, 0x09, 0x4B,
                             (byte) 0x97, 0x20, 0x5D, 0x2A}; // Unique constant
 

@@ -21,7 +21,6 @@ package com.hanhuy.keepassj;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.security.MessageDigest;
 import java.security.SecureRandom;
 import java.util.Date;
 import java.util.UUID;
@@ -91,10 +90,7 @@ import java.util.UUID;
 			if(pbEntropy.length >= 64)
 			{
                 // or get SHA-512
-                try {
-                    MessageDigest shaNew = MessageDigest.getInstance("SHA-256");
-                    pbNewData = shaNew.digest(pbEntropy);
-                } catch (Exception e) { throw new RuntimeException(e); }
+				pbNewData = Digests.sha256(pbEntropy);
 			}
 
 			ByteArrayOutputStream ms = new ByteArrayOutputStream();
@@ -104,13 +100,8 @@ import java.util.UUID;
 				ms.write(pbNewData, 0, pbNewData.length);
 
 				byte[] pbFinal = ms.toByteArray();
-                try {
-                    // TODO try to fetch SHA-512 as well
-                    MessageDigest shaPool = MessageDigest.getInstance("SHA-256");
-                    m_pbEntropyPool = shaPool.digest(pbFinal);
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
+				// TODO try to fetch SHA-512 as well
+				m_pbEntropyPool = Digests.sha256(pbFinal);
 			}
 		}
 
@@ -189,10 +180,7 @@ import java.util.UUID;
 				m_uGeneratedBytesCount += 32;
 			}
 
-            try {
-                MessageDigest sha256 = MessageDigest.getInstance("SHA-256");
-                return sha256.digest(pbFinal);
-            } catch (Exception e) { throw new IllegalStateException(e); }
+			return Digests.sha256(pbFinal);
 		}
 
 		/// <summary>

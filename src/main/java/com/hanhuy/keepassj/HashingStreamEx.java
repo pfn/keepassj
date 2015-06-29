@@ -124,7 +124,7 @@ class StreamHashing
 		{
 
             try {
-                m_hash = MessageDigest.getInstance("SHA-256");
+                m_hash = Digests.getInstance().sha256();
             } catch (Exception e) { throw new RuntimeException(e); }
 			if(m_hash == null) { assert false; }
 		}

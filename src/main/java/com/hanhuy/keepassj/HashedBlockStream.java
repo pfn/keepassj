@@ -18,6 +18,7 @@ package com.hanhuy.keepassj;
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+import com.google.common.io.BaseEncoding;
 import com.google.common.io.LittleEndianDataInputStream;
 import com.google.common.io.LittleEndianDataOutputStream;
 
@@ -65,12 +66,12 @@ public class HashedBlockStream {
             {
                 byte[] pbHash;
                 if(m_nBufferPos == m_pbBuffer.length)
-                    pbHash = KdbxFile.sha256().digest(m_pbBuffer);
+                    pbHash = Digests.sha256(m_pbBuffer);
                 else
                 {
                     byte[] pbData = new byte[m_nBufferPos];
                     System.arraycopy(m_pbBuffer, 0, pbData, 0, m_nBufferPos);
-                    pbHash = KdbxFile.sha256().digest(pbData);
+                    pbHash = Digests.sha256(pbData);
                 }
 
                 m_bwOutput.write(pbHash);
@@ -200,18 +201,28 @@ public class HashedBlockStream {
             }
 
             m_pbBuffer = new byte[nBufferSize];
-            m_brInput.readFully(m_pbBuffer);
+//            m_brInput.readFully(m_pbBuffer);
+
+            int read = 0;
+            int r = 0;
+            while (read < nBufferSize && r != -1) {
+                r = m_brInput.read(m_pbBuffer, read, nBufferSize - read);
+                read += r;
+            }
 
             if(m_bVerify)
             {
-                byte[] pbComputedHash = KdbxFile.sha256().digest(m_pbBuffer);
+                byte[] pbComputedHash = Digests.sha256(m_pbBuffer);
                 if((pbComputedHash == null) || (pbComputedHash.length != 32))
                     throw new KdbxFileFormatException("invalid hash");
 
                 for(int iHashPos = 0; iHashPos < 32; ++iHashPos)
                 {
                     if(pbStoredHash[iHashPos] != pbComputedHash[iHashPos])
-                        throw new KdbxFileFormatException("invalid hash");
+                        throw new KdbxFileFormatException("invalid hash: " +
+                            BaseEncoding.base16().encode(pbStoredHash) +
+                                    " != " +
+                                    BaseEncoding.base16().encode(pbComputedHash));
                 }
             }
 

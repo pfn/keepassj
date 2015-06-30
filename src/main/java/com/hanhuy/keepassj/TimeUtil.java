@@ -28,6 +28,7 @@ import java.util.*;
 	/// </summary>
 	public class TimeUtil
 	{
+		public final static TimeZone UTC = TimeZone.getTimeZone("UTC");
 		/// <summary>
 		/// Length of a compressed <c>PW_TIME</c> structure in bytes.
 		/// </summary>
@@ -50,7 +51,7 @@ import java.util.*;
 			// Pack time to 5 byte structure:
 			// Byte bits: 11111111 22222222 33333333 44444444 55555555
 			// Contents : 00YYYYYY YYYYYYMM MMDDDDDH HHHHMMMM MMSSSSSS
-            Calendar c = Calendar.getInstance();
+            Calendar c = new GregorianCalendar(UTC, Locale.US);
             c.setTime(dt);
 			pb[0] = (byte)((c.get(Calendar.YEAR) >> 6) & 0x3F);
 			pb[1] = (byte)(((c.get(Calendar.YEAR) & 0x3F) << 2) | ((c.get(Calendar.MONTH) >> 2) & 0x03));
@@ -96,7 +97,7 @@ import java.util.*;
 		{
 			assert PwTimeLength == 7;
 
-            Calendar c = Calendar.getInstance();
+            Calendar c = new GregorianCalendar(UTC, Locale.US);
 			byte[] pb = new byte[7];
 			pb[0] = (byte)(c.get(Calendar.YEAR) & 0xFF);
 			pb[1] = (byte)(c.get(Calendar.YEAR) >> 8);
@@ -121,7 +122,7 @@ import java.util.*;
 			assert pb != null; if(pb == null) throw new IllegalArgumentException("pb");
 			assert pb.length == 7; if(pb.length != 7) throw new IllegalArgumentException();
 
-            Calendar c = Calendar.getInstance();
+            Calendar c = new GregorianCalendar(UTC, Locale.US);
             c.set(Calendar.YEAR, (pb[1] << 8) | pb[0]);
             c.set(Calendar.MONTH, pb[2]);
             c.set(Calendar.DAY_OF_MONTH, pb[3]);
@@ -240,25 +241,56 @@ import java.util.*;
 			return sbFmt.toString();
 		}
 
+		public static String pad0s(int i, int width) {
+			StringBuilder s = new StringBuilder(width);
+			s.append(String.valueOf(i));
+			while (s.length() < width)
+				s.insert(0, "0");
+			return s.toString();
+		}
 		public static String SerializeUtc(Date dt)
 		{
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-            sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
-            String str = sdf.format(dt);
-			if(!str.endsWith("Z")) str += "Z";
-			return str;
+			Calendar c = new GregorianCalendar(UTC, Locale.US);
+			c.setTime(dt);
+			StringBuilder b = new StringBuilder(21);
+			b.append(pad0s(c.get(Calendar.YEAR), 4));
+			b.append("-");
+			b.append(pad0s(c.get(Calendar.MONTH) + 1, 2));
+			b.append("-");
+			b.append(pad0s(c.get(Calendar.DAY_OF_MONTH), 2));
+			b.append("T");
+			b.append(pad0s(c.get(Calendar.HOUR_OF_DAY), 2));
+			b.append(":");
+			b.append(pad0s(c.get(Calendar.MINUTE), 2));
+			b.append(":");
+			b.append(pad0s(c.get(Calendar.SECOND), 2));
+			b.append("Z");
+			return b.toString();
 		}
 
 		public static boolean TryDeserializeUtc(String str, Date[] dt)
 		{
 			if(str == null) throw new IllegalArgumentException("str");
-            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'");
-            sdf.setTimeZone(TimeZone.getTimeZone("UTC"));
+			Calendar c = new GregorianCalendar(UTC, Locale.US);
+//			"yyyy-MM-ddTHH:mm:ssZ"
 
 //			if(str.endsWith("Z")) str = str.substring(0, str.length() - 1);
 
             try {
-                dt[0] = sdf.parse(str);
+				String year = str.substring(0, 4);
+				c.set(Calendar.YEAR, Integer.parseInt(year));
+				String month = str.substring(5, 7);
+				c.set(Calendar.MONTH, Integer.parseInt(month) - 1);
+				String day = str.substring(8, 10);
+				c.set(Calendar.DAY_OF_MONTH, Integer.parseInt(day));
+				String hour = str.substring(11, 13);
+				c.set(Calendar.HOUR_OF_DAY, Integer.parseInt(hour));
+				String minute = str.substring(14, 16);
+				c.set(Calendar.MINUTE, Integer.parseInt(minute));
+				String second = str.substring(17, 19);
+				c.set(Calendar.SECOND, Integer.parseInt(second));
+
+                dt[0] = c.getTime();
                 return true;
             } catch (Exception e) {
                 return false;

@@ -248,8 +248,8 @@ import java.util.*;
 					false, fmt.format(dtNow)), ctx, uRecursionLevel);
 
                 SimpleDateFormat utcfmt = new SimpleDateFormat("yyyyMMddHHmmss");
-                utcfmt.setTimeZone(TimeZone.getTimeZone("UTC"));
-                c.setTimeZone(TimeZone.getTimeZone("UTC"));
+                utcfmt.setTimeZone(TimeUtil.UTC);
+                c.setTimeZone(TimeUtil.UTC);
 				str = SprEngine.FillIfExists(str, "{DT_UTC_YEAR}", new ProtectedString(
 					false, String.format(d4, c.get(Calendar.YEAR))), ctx, uRecursionLevel);
 				str = SprEngine.FillIfExists(str, "{DT_UTC_MONTH}", new ProtectedString(

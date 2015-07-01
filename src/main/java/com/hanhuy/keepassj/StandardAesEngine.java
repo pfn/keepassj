@@ -18,12 +18,11 @@ package com.hanhuy.keepassj;
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+import org.bouncycastle.crypto.BlockCipher;
 import org.bouncycastle.crypto.BufferedBlockCipher;
-import org.bouncycastle.crypto.engines.AESEngine;
 import org.bouncycastle.crypto.io.CipherInputStream;
 import org.bouncycastle.crypto.io.CipherOutputStream;
 import org.bouncycastle.crypto.modes.CBCBlockCipher;
-import org.bouncycastle.crypto.paddings.PKCS7Padding;
 import org.bouncycastle.crypto.paddings.PaddedBufferedBlockCipher;
 import org.bouncycastle.crypto.params.KeyParameter;
 import org.bouncycastle.crypto.params.ParametersWithIV;
@@ -85,7 +84,7 @@ import java.io.OutputStream;
 //                SecretKeySpec keyspec = new SecretKeySpec(pbLocalKey, "AES");
 //                r.init(Cipher.DECRYPT_MODE, keyspec, ivspec);
 
-                AESEngine aes = new AESEngine();
+                BlockCipher aes = AesEngines.createAesEngine();
                 KeyParameter key = new KeyParameter(pbLocalKey);
                 ParametersWithIV iv = new ParametersWithIV(key, pbLocalIV);
                 BufferedBlockCipher cipher = new PaddedBufferedBlockCipher(new CBCBlockCipher(aes));
@@ -106,7 +105,7 @@ import java.io.OutputStream;
             System.arraycopy(pbKey, 0, pbLocalKey, 0, 32);
 
             try {
-                AESEngine aes = new AESEngine();
+                BlockCipher aes = AesEngines.createAesEngine();
                 KeyParameter key = new KeyParameter(pbLocalKey);
                 ParametersWithIV iv = new ParametersWithIV(key, pbLocalIV);
                 BufferedBlockCipher cipher = new PaddedBufferedBlockCipher(new CBCBlockCipher(aes));

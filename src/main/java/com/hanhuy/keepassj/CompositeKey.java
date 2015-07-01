@@ -18,7 +18,7 @@ package com.hanhuy.keepassj;
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
-import org.bouncycastle.crypto.engines.AESEngine;
+import org.bouncycastle.crypto.BlockCipher;
 import org.bouncycastle.crypto.params.KeyParameter;
 
 import java.io.ByteArrayOutputStream;
@@ -248,30 +248,7 @@ import java.util.List;
 		public static boolean TransformKeyManaged(byte[] pbNewKey32, byte[] pbKeySeed32,
 			long uNumRounds)
 		{
-			byte[] pbIV = new byte[16];
-			Arrays.fill(pbIV, (byte) 0);
-
-            try {
-                AESEngine engine = new AESEngine();
-                engine.init(true, new KeyParameter(pbKeySeed32));
-                if (engine.getBlockSize() != (128 / 8)) // AES block size
-                {
-                    assert false;
-                    throw new RuntimeException();
-                }
-
-//                IvParameterSpec ivspec = new IvParameterSpec(pbIV);
-//                SecretKeySpec key = new SecretKeySpec(pbKeySeed32, "AES");
-//                c.init(Cipher.ENCRYPT_MODE, key, ivspec);
-
-                for (long i = 0; i < uNumRounds; ++i) {
-                    engine.processBlock(pbNewKey32, 0, pbNewKey32, 0);
-                    engine.processBlock(pbNewKey32, 16, pbNewKey32, 16);
-                }
-//                engine.doFinal();
-            } catch (Exception e) { throw new RuntimeException(e); }
-
-			return true;
+			return AesEngines.transformKey(pbNewKey32, pbKeySeed32, uNumRounds);
 		}
 
 		/// <summary>
@@ -305,7 +282,7 @@ import java.util.List;
 			byte[] pbIV = new byte[16];
 			Arrays.fill(pbIV, (byte) 0);
             try {
-                AESEngine engine = new AESEngine();
+                BlockCipher engine = AesEngines.createAesEngine();
                 engine.init(true, new KeyParameter(pbKey));
 
                 if (engine.getBlockSize() != (128 / 8)) // AES block size

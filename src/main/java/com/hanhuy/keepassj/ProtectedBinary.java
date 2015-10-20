@@ -144,7 +144,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 			byte[] pb = xbProtected.ReadPlainText();
 			Init(bEnableProtection, pb);
-			MemUtil.ZeroByteArray(pb);
+			if (bEnableProtection) MemUtil.ZeroByteArray(pb);
 		}
 
 		private void Init(boolean bEnableProtection, byte[] pbData)

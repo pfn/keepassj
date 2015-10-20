@@ -149,19 +149,31 @@ import java.util.List;
 			ValidateUserKeys();
 
 			// Concatenate user key data
-			ByteArrayOutputStream ms = new ByteArrayOutputStream();
+			List<byte[]> lData = new ArrayList<byte[]>();
+			int cbData = 0;
 			for(IUserKey pKey : m_vUserKeys)
 			{
 				ProtectedBinary b = pKey.getKeyData();
 				if(b != null)
 				{
 					byte[] pbKeyData = b.ReadData();
-					ms.write(pbKeyData, 0, pbKeyData.length);
-					MemUtil.ZeroByteArray(pbKeyData);
+					lData.add(pbKeyData);
+					cbData += pbKeyData.length;
 				}
 			}
+			byte[] pbAllData = new byte[cbData];
+			int p = 0;
+			for(byte[] pbData : lData)
+			{
+				System.arraycopy(pbData, 0, pbAllData, p, pbData.length);
+				p += pbData.length;
+				MemUtil.ZeroByteArray(pbData);
+			}
+			assert(p == cbData);
 
-			return Digests.sha256(ms.toByteArray());
+			byte[] pbHash = Digests.sha256(pbAllData);
+			MemUtil.ZeroByteArray(pbAllData);
+			return pbHash;
 		}
 
 		public boolean EqualsValue(CompositeKey ckOther)
@@ -171,8 +183,8 @@ import java.util.List;
 			byte[] pbThis = CreateRawCompositeKey32();
 			byte[] pbOther = ckOther.CreateRawCompositeKey32();
 			boolean bResult = MemUtil.ArraysEqual(pbThis, pbOther);
-			Arrays.fill(pbOther, (byte)0);
-			Arrays.fill(pbThis, (byte)0);
+			MemUtil.ZeroByteArray(pbOther);
+			MemUtil.ZeroByteArray(pbThis);
 
 			return bResult;
 		}
@@ -235,14 +247,19 @@ import java.util.List;
 			byte[] pbNewKey = new byte[32];
 			System.arraycopy(pbOriginalKey32, 0, pbNewKey, 0, pbNewKey.length);
 
-			// Try to use the native library first
+			try {
+				// Try to use the native library first
 //			if(NativeLib.TransformKey256(pbNewKey, pbKeySeed32, uNumRounds))
 //				return (new SHA256Managed()).ComputeHash(pbNewKey);
 
-			if(!TransformKeyManaged(pbNewKey, pbKeySeed32, uNumRounds))
-				return null;
+				if (!TransformKeyManaged(pbNewKey, pbKeySeed32, uNumRounds))
+					return null;
 
-			return Digests.sha256(pbNewKey);
+				return Digests.sha256(pbNewKey);
+			}
+			finally {
+				MemUtil.ZeroByteArray(pbNewKey);
+			}
 		}
 
 		public static boolean TransformKeyManaged(byte[] pbNewKey32, byte[] pbKeySeed32,

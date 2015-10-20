@@ -276,7 +276,7 @@ import java.util.*;
 			{
 				byte[] pbData = ps.ReadUtf8();
 				Set(strField, new ProtectedString(bProtect, pbData));
-				MemUtil.ZeroByteArray(pbData);
+				if (bProtect) MemUtil.ZeroByteArray(pbData);
 			}
 		}
 	}

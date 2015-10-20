@@ -131,7 +131,7 @@ import java.util.Arrays;
 
 			byte[] pb = xbProtected.ReadPlainText();
 			Init(bEnableProtection, pb);
-			MemUtil.ZeroByteArray(pb);
+			if (bEnableProtection) MemUtil.ZeroByteArray(pb);
 		}
 
 		private void Init(boolean bEnableProtection, String str)
@@ -223,7 +223,7 @@ import java.util.Arrays;
 
 			byte[] pb = ReadUtf8();
 			ProtectedString ps = new ProtectedString(bProtect, pb);
-			MemUtil.ZeroByteArray(pb);
+			if (bProtect) MemUtil.ZeroByteArray(pb);
 			return ps;
 		}
 

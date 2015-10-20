@@ -1475,10 +1475,12 @@ import java.util.zip.GZIPOutputStream;
         String strRef = xr.getAttributeValue(null, AttrRef);
         if(strRef != null)
         {
-                ProtectedBinary pb = BinPoolGet(strRef);
-                if(pb != null) return pb;
-                else { assert false; }
-        }
+			ProtectedBinary pb = BinPoolGet(strRef);
+			// ignore change in 2.30
+			// https://sourceforge.net/p/keepass/feature-requests/2023/
+			if(pb != null) return pb;
+			else { assert false; }
+		}
 
         boolean bCompressed = false;
 

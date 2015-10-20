@@ -36,16 +36,22 @@ import java.util.UUID;
 		private int m_uCounter;
 		private SecureRandom m_rng = new SecureRandom();
 		private long m_uGeneratedBytesCount = 0;
+		private final static Object lock = new Object();
 
 		private final Object m_oSyncRoot = new Object();
 
 		private static CryptoRandom m_pInstance = null;
 		public static CryptoRandom getInstance()
 		{
-				if(m_pInstance != null) return m_pInstance;
-
-				m_pInstance = new CryptoRandom();
-				return m_pInstance;
+			CryptoRandom cr;
+			synchronized(lock) {
+				cr = m_pInstance;
+				if (cr == null) {
+					cr = new CryptoRandom();
+					m_pInstance = cr;
+				}
+			}
+			return cr;
 		}
 
 		/// <summary>

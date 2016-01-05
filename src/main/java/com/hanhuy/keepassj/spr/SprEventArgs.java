@@ -22,12 +22,12 @@ public class SprEventArgs extends EventObject
     }
 
     public SprEventArgs() {
-        super(null);
+        super(new Object());
     }
 
     public SprEventArgs(String strText, SprContext ctx)
     {
-        super(null);
+        super(new Object());
         if(strText == null) throw new IllegalArgumentException("strText");
         // ctx == null is allowed
 

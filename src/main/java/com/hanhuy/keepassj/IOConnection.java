@@ -19,6 +19,8 @@ package com.hanhuy.keepassj;
 */
 
 import java.io.*;
+import java.util.ArrayList;
+import java.util.List;
 
 /*
 abstract class WrapperStream : Stream
@@ -202,7 +204,7 @@ abstract class WrapperStream : Stream
 		// Web request headers
 		public final static String WrhMoveFileTo = "MoveFileTo";
 
-		public static EventHandler<IOAccessEventArgs> IOAccessPre;
+		public static List<EventHandler<IOAccessEventArgs>> IOAccessPre = new ArrayList<>();
 
 		public static InputStream OpenRead(IOConnectionInfo ioc) throws IOException
 		{
@@ -337,11 +339,10 @@ abstract class WrapperStream : Stream
 			if(ioc == null) { assert false; return; }
 			// ioc2 may be null
 
-			if(IOConnection.IOAccessPre != null)
-			{
+			for (EventHandler<IOAccessEventArgs> h : IOConnection.IOAccessPre) {
 				IOConnectionInfo ioc2Lcl = ((ioc2 != null) ? ioc2.CloneDeep() : null);
 				IOAccessEventArgs e = new IOAccessEventArgs(ioc.CloneDeep(), ioc2Lcl, t);
-				IOConnection.IOAccessPre.delegate(null, e);
+				h.delegate(null, e);
 			}
 		}
 	}

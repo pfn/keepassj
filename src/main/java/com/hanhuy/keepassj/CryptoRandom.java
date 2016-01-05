@@ -22,8 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.security.SecureRandom;
-import java.util.Date;
-import java.util.UUID;
+import java.util.*;
 
 /// <summary>
 	/// Cryptographically strong random number generator. The returned values
@@ -70,7 +69,7 @@ import java.util.UUID;
 		/// Event that is triggered whenever the internal <c>GenerateRandom256</c>
 		/// method is called to generate random bytes.
 		/// </summary>
-		public EventHandler GenerateRandom256Pre;
+		public List<EventHandler<EventObject>> GenerateRandom256Pre = new ArrayList<>();
 
 		private CryptoRandom()
 		{
@@ -161,8 +160,9 @@ import java.util.UUID;
 
 		private byte[] GenerateRandom256()
 		{
-			if(this.GenerateRandom256Pre != null)
-				this.GenerateRandom256Pre.delegate(this, null);
+			for (EventHandler<EventObject> h : this.GenerateRandom256Pre) {
+				h.delegate(this, null);
+			}
 
 			byte[] pbFinal;
 			synchronized (m_oSyncRoot)

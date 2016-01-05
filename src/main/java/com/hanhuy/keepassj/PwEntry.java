@@ -264,8 +264,8 @@ import com.google.common.base.Strings;
 				m_vTags = value;
 			}
 
-		public static EventHandler<ObjectTouchedEventArgs> EntryTouched;
-		public EventHandler<ObjectTouchedEventArgs> Touched;
+		public static List<EventHandler<ObjectTouchedEventArgs>> EntryTouched = new ArrayList<>();
+		public List<EventHandler<ObjectTouchedEventArgs>> Touched = new ArrayList<>();
 
 		/// <summary>
 		/// Construct a new, empty password entry. Member variables will be initialized
@@ -542,11 +542,11 @@ import com.google.common.base.Strings;
 
 			if(bModified) m_tLastMod = m_tLastAccess;
 
-			if(this.Touched != null)
-				this.Touched.delegate(this, new ObjectTouchedEventArgs(this,
+			for (EventHandler<ObjectTouchedEventArgs> h : this.Touched)
+				h.delegate(this, new ObjectTouchedEventArgs(this,
 					bModified, bTouchParents));
-			if(PwEntry.EntryTouched != null)
-				PwEntry.EntryTouched.delegate(this, new ObjectTouchedEventArgs(this,
+			for (EventHandler<ObjectTouchedEventArgs> h : PwEntry.EntryTouched)
+				h.delegate(this, new ObjectTouchedEventArgs(this,
 					bModified, bTouchParents));
 
 			if(bTouchParents && (m_pParentGroup != null))

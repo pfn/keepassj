@@ -57,8 +57,8 @@ import java.util.*;
 		//   should add this placeholder to the FilterPlaceholderHints list
 		//   (e.g. add the String "{EXAMPLE}"). Please remove your strings from
 		//   the list when your plugin is terminated.
-		public static EventHandler<SprEventArgs> FilterCompilePre;
-		public static EventHandler<SprEventArgs> FilterCompile;
+		public static List<EventHandler<SprEventArgs>> FilterCompilePre = new ArrayList<>();
+		public static List<EventHandler<SprEventArgs>> FilterCompile = new ArrayList<>();
 
 		private static List<String> m_lFilterPlh = new ArrayList<String>();
 		// See the events above
@@ -109,11 +109,12 @@ import java.util.*;
 
 			boolean bExt = ctx.getFlags().contains(SprCompileFlags.or(SprCompileFlags.ExtActive,
 				SprCompileFlags.ExtNonActive));
-			if(bExt && (SprEngine.FilterCompilePre != null))
-			{
-				SprEventArgs args = new SprEventArgs(str, ctx.clone());
-				SprEngine.FilterCompilePre.delegate(null, args);
-				str = args.getText();
+			if(bExt) {
+				for (EventHandler<SprEventArgs> h : SprEngine.FilterCompilePre) {
+					SprEventArgs args = new SprEventArgs(str, ctx.clone());
+					h.delegate(null, args);
+					str = args.getText();
+				}
 			}
 
 			if(ctx.getFlags().contains(SprCompileFlags.Comments))
@@ -297,9 +298,11 @@ import java.util.*;
 
 			if(bExt && (SprEngine.FilterCompile != null))
 			{
-				SprEventArgs args = new SprEventArgs(str, ctx.clone());
-				SprEngine.FilterCompile.delegate(null, args);
-				str = args.getText();
+				for (EventHandler<SprEventArgs> h : SprEngine.FilterCompile) {
+					SprEventArgs args = new SprEventArgs(str, ctx.clone());
+					h.delegate(null, args);
+					str = args.getText();
+				}
 			}
 
 			if(ctx.getEncodeAsAutoTypeSequence())

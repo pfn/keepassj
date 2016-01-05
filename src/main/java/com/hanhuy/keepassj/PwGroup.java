@@ -277,8 +277,8 @@ import java.util.regex.Pattern;
 				m_pwLastTopVisibleEntry = value;
 			}
 
-		public static EventHandler<ObjectTouchedEventArgs> GroupTouched;
-		public EventHandler<ObjectTouchedEventArgs> Touched;
+		public static List<EventHandler<ObjectTouchedEventArgs>> GroupTouched = new ArrayList<>();
+		public List<EventHandler<ObjectTouchedEventArgs>> Touched = new ArrayList<>();
 
 		/// <summary>
 		/// Construct a new, empty group.
@@ -515,11 +515,11 @@ import java.util.regex.Pattern;
 
 			if(bModified) m_tLastMod = m_tLastAccess;
 
-			if(this.Touched != null)
-				this.Touched.delegate(this, new ObjectTouchedEventArgs(this,
+			for (EventHandler<ObjectTouchedEventArgs> h : this.Touched)
+				h.delegate(this, new ObjectTouchedEventArgs(this,
 					bModified, bTouchParents));
-			if(PwGroup.GroupTouched != null)
-				PwGroup.GroupTouched.delegate(this, new ObjectTouchedEventArgs(this,
+			for (EventHandler<ObjectTouchedEventArgs> h : PwGroup.GroupTouched)
+				h.delegate(this, new ObjectTouchedEventArgs(this,
 					bModified, bTouchParents));
 
 			if(bTouchParents && (m_pParentGroup != null))

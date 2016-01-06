@@ -53,7 +53,7 @@ package com.hanhuy.keepassj.spr;
             opt.value = option;
             return opt;
         }
-        static class Flags {
+        public static class Flags {
             int value;
             public boolean contains(SprCompileFlags option) {
                 return (value & option.value) != option.value;

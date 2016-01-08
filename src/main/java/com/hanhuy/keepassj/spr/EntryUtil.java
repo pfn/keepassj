@@ -109,21 +109,21 @@ public class EntryUtil {
                 {
                     strKey = pe.getStrings().ReadSafe(strKeyFieldHex);
                     if(strKey.length() > 0)
-                        pbSecret = MemUtil.HexStringToByteArray(strKey);
+                        pbSecret = MemUtil.HexStringToByteArray(strKey.toUpperCase());
                 }
 
                 if(pbSecret == null)
                 {
                     strKey = pe.getStrings().ReadSafe(strKeyFieldBase32);
                     if(strKey.length() > 0)
-                        pbSecret = MemUtil.ParseBase32(strKey);
+                        pbSecret = MemUtil.ParseBase32(strKey.toUpperCase());
                 }
 
                 if(pbSecret == null)
                 {
                     strKey = pe.getStrings().ReadSafe(strKeyFieldBase64);
                     if(strKey.length() > 0)
-                        pbSecret = BaseEncoding.base64().decode(strKey);
+                        pbSecret = BaseEncoding.base64().decode(strKey.toUpperCase());
                 }
             }
             catch(Exception e) { assert false; }

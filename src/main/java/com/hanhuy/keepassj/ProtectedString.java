@@ -18,6 +18,8 @@ package com.hanhuy.keepassj;
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+import com.google.common.base.Utf8;
+
 import java.nio.ByteBuffer;
 import java.nio.CharBuffer;
 import java.nio.charset.Charset;
@@ -192,7 +194,10 @@ import java.util.Arrays;
 			ProtectedBinary pBin = m_pbUtf8; // Local ref for thread-safety
 			if(pBin != null) return pBin.ReadData();
 
-			return StrUtil.Utf8.encode(m_strPlainText).array();
+			ByteBuffer b = StrUtil.Utf8.encode(m_strPlainText);
+			byte[] buf = new byte[b.remaining()];
+			b.get(buf);
+			return buf;
 		}
 
 		/// <summary>
@@ -243,7 +248,9 @@ import java.util.Arrays;
 			Charset utf8 = StrUtil.Utf8;
 
 			byte[] pb = ReadUtf8();
-			char[] v = utf8.decode(ByteBuffer.wrap(pb)).array();
+			CharBuffer cb = utf8.decode(ByteBuffer.wrap(pb));
+			char[] v = new char[cb.remaining()];
+			cb.get(v);
 			char[] vNew;
 
 			try
@@ -262,10 +269,13 @@ import java.util.Arrays;
 			finally
 			{
 				Arrays.fill(v, (char)0);
+				Arrays.fill(cb.array(), (char)0);
 				MemUtil.ZeroByteArray(pb);
 			}
 
-			byte[] pbNew = utf8.encode(CharBuffer.wrap(vNew)).array();
+			ByteBuffer bb = utf8.encode(CharBuffer.wrap(vNew));
+			byte[] pbNew = new byte[bb.remaining()];
+			bb.get(pbNew);
 			ProtectedString ps = new ProtectedString(m_bIsProtected, pbNew);
 
 //			assert utf8.GetString(pbNew, 0, pbNew.Length) ==
@@ -273,6 +283,7 @@ import java.util.Arrays;
 
 			Arrays.fill(vNew, (char)0);
 			MemUtil.ZeroByteArray(pbNew);
+			MemUtil.ZeroByteArray(bb.array());
 			return ps;
 		}
 
@@ -292,7 +303,9 @@ import java.util.Arrays;
 			Charset utf8 = StrUtil.Utf8;
 
 			byte[] pb = ReadUtf8();
-			char[] v = utf8.decode(ByteBuffer.wrap(pb)).array();
+			CharBuffer cb = utf8.decode(ByteBuffer.wrap(pb));
+			char[] v = new char[cb.remaining()];
+			cb.get(v);
 			char[] vNew;
 
 			try
@@ -308,10 +321,13 @@ import java.util.Arrays;
 			finally
 			{
 				Arrays.fill(v, (char)0);
+				Arrays.fill(cb.array(), (char)0);
 				MemUtil.ZeroByteArray(pb);
 			}
 
-			byte[] pbNew = utf8.encode(CharBuffer.wrap(vNew)).array();
+			ByteBuffer bb = utf8.encode(CharBuffer.wrap(vNew));
+			byte[] pbNew = new byte[bb.remaining()];
+			bb.get(pbNew);
 			ProtectedString ps = new ProtectedString(m_bIsProtected, pbNew);
 
 //			assert utf8.GetString(pbNew, 0, pbNew.Length) ==
@@ -319,6 +335,7 @@ import java.util.Arrays;
 
 			Arrays.fill(vNew, (char)0);
 			MemUtil.ZeroByteArray(pbNew);
+			MemUtil.ZeroByteArray(bb.array());
 			return ps;
 		}
 

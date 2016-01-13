@@ -387,11 +387,15 @@ import java.util.zip.GZIPOutputStream;
 			if(pbData.length == 0) return pbData;
 
 			ByteArrayOutputStream msCompressed = new ByteArrayOutputStream();
-			GZIPOutputStream gz = new GZIPOutputStream(msCompressed);
+			GZIPOutputStream gz = null;
 			ByteArrayInputStream msSource = new ByteArrayInputStream(pbData);
-			MemUtil.CopyStream(msSource, gz);
-			gz.close();
-			msSource.close();
+			try {
+				gz = new GZIPOutputStream(msCompressed);
+				MemUtil.CopyStream(msSource, gz);
+			} finally {
+				if (gz != null)
+                    gz.close();
+			}
 
 			byte[] pbCompressed = msCompressed.toByteArray();
 			msCompressed.close();
@@ -404,10 +408,15 @@ import java.util.zip.GZIPOutputStream;
 			if(pbCompressed.length == 0) return pbCompressed;
 
 			ByteArrayInputStream msCompressed = new ByteArrayInputStream(pbCompressed);
-			GZIPInputStream gz = new GZIPInputStream(msCompressed);
+			GZIPInputStream gz = null;
 			ByteArrayOutputStream msData = new ByteArrayOutputStream();
-			MemUtil.CopyStream(gz, msData);
-			gz.close();
+			try {
+				gz = new GZIPInputStream(msCompressed);
+				MemUtil.CopyStream(gz, msData);
+			} finally {
+				if (gz != null)
+					gz.close();
+			}
 			msCompressed.close();
 
 			byte[] pbData = msData.toByteArray();

@@ -297,6 +297,9 @@ import java.util.*;
             }
 		}
 
+		public static double SerializeUnix(Date dt) {
+			return dt.getTime() / 1000.0d;
+		}
 		public static Date ConvertUnixTime(double dtUnix)
 		{
             return new Date((long)dtUnix * 1000);

@@ -574,7 +574,7 @@ public class StrUtil {
         return sb.toString();
     }
 
-    private static Pattern m_rxNaturalSplit = null;
+    private static Pattern g_rxNaturalSplit = null;
 
     public static int CompareNaturally(String strX, String strY) {
         assert strX != null;
@@ -585,11 +585,11 @@ public class StrUtil {
         strX = strX.toLowerCase(); // Case-insensitive comparison
         strY = strY.toLowerCase();
 
-        if (m_rxNaturalSplit == null)
-            m_rxNaturalSplit = Pattern.compile("([0-9]+)");
+        if (g_rxNaturalSplit == null)
+            g_rxNaturalSplit = Pattern.compile("([0-9]+)");
 
-        String[] vPartsX = m_rxNaturalSplit.split(strX);
-        String[] vPartsY = m_rxNaturalSplit.split(strY);
+        String[] vPartsX = g_rxNaturalSplit.split(strX);
+        String[] vPartsY = g_rxNaturalSplit.split(strY);
 
         for (int i = 0; i < Math.min(vPartsX.length, vPartsY.length); ++i) {
             String strPartX = vPartsX[i], strPartY = vPartsY[i];

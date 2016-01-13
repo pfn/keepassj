@@ -95,7 +95,7 @@ import java.util.*;
 			if(pbEntropy.length >= 64)
 			{
                 // or get SHA-512
-				pbNewData = Digests.sha256(pbEntropy);
+				pbNewData = Digests.sha512(pbEntropy);
 			}
 
 			ByteArrayOutputStream ms = new ByteArrayOutputStream();
@@ -106,7 +106,7 @@ import java.util.*;
 
 				byte[] pbFinal = ms.toByteArray();
 				// TODO try to fetch SHA-512 as well
-				m_pbEntropyPool = Digests.sha256(pbFinal);
+				m_pbEntropyPool = Digests.sha512(pbFinal);
 			}
 		}
 

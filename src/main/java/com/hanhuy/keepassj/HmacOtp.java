@@ -32,17 +32,22 @@ public class HmacOtp
         1000, 10000, 100000, 1000000, 10000000, 100000000 };
 
     public static String Generate(byte[] pbSecret, long uFactor,
+                                  int uCodeDigits, boolean bAddChecksum, int iTruncationOffset) {
+        HMac digest = new HMac(new SHA1Digest());
+        return Generate(digest, pbSecret, uFactor,
+                uCodeDigits, bAddChecksum, iTruncationOffset);
+    }
+    public static String Generate(HMac digest, byte[] pbSecret, long uFactor,
                                   int uCodeDigits, boolean bAddChecksum, int iTruncationOffset)
     {
         byte[] pbText = MemUtil.UInt64ToBytes(uFactor);
         StrUtil.ArraysReverse(pbText); // Big-Endian
 
-        HMac hsha1 = new HMac(new SHA1Digest());
         KeyParameter key = new KeyParameter(pbSecret);
-        hsha1.init(key);
-        byte[] pbHash = new byte[hsha1.getMacSize()];
-        hsha1.update(pbText, 0, pbText.length);
-        hsha1.doFinal(pbHash, 0);
+        digest.init(key);
+        byte[] pbHash = new byte[digest.getMacSize()];
+        digest.update(pbText, 0, pbText.length);
+        digest.doFinal(pbHash, 0);
 
         int uOffset = (int)(pbHash[pbHash.length - 1] & 0xF);
         if((iTruncationOffset >= 0) && (iTruncationOffset < (pbHash.length - 4)))

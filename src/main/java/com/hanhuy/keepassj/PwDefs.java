@@ -48,18 +48,18 @@ import java.util.EventObject;
 		/// e.g. 2.19 = 0x02130000.
 		/// It is highly recommended to use <c>FileVersion64</c> instead.
 		/// </summary>
-		public final static int Version32 = 0x021F0000;
+		public final static int Version32 = 0x02200000;
 
 		/// <summary>
 		/// Version, encoded as 64-bit unsigned integer
 		/// (component-wise, 16 bits per component).
 		/// </summary>
-		public final static long FileVersion64 = 0x0002001F00000000L;
+		public final static long FileVersion64 = 0x0002002000000000L;
 
 		/// <summary>
 		/// Version, encoded as String.
 		/// </summary>
-		public final static String VersionString = "2.31";
+		public final static String VersionString = "2.32";
 
 		public final static String Copyright = "Copyright © 2003-2016 Dominik Reichl";
 

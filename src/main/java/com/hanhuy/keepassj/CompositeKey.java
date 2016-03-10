@@ -113,6 +113,7 @@ import java.util.List;
 
 			for(IUserKey pKey : m_vUserKeys)
 			{
+				if (pKey == null) { assert false; continue; }
 				if(pKey.getClass().isAssignableFrom(tUserKeyType))
 					return true;
 			}
@@ -133,6 +134,7 @@ import java.util.List;
 
 			for(IUserKey pKey : m_vUserKeys)
 			{
+				if (pKey == null) { assert false; continue; }
 				if(pKey.getClass().isAssignableFrom(tUserKeyType))
 					return pKey;
 			}

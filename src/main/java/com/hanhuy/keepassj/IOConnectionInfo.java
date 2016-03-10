@@ -123,6 +123,8 @@ enum IOCredSaveMode
 			set { m_ioHint = value; }
 		} */
 
+		// INTENTIONALLY DON'T CARE ABOUT IocProperties*
+
 		public IOConnectionInfo CloneDeep()
 		{
             try {

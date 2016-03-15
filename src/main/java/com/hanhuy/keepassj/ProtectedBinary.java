@@ -68,7 +68,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 
 		// ProtectedMemory is supported only on Windows 2000 SP3 and higher
-		private static boolean g_bProtectedMemorySupported = false;
+		private static boolean g_obProtectedMemorySupported = false;
 		private static boolean ProtectedMemorySupported = false;
 
 		private static AtomicLong g_lCurID = new AtomicLong(0);

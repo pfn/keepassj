@@ -2,7 +2,7 @@ organization := "com.hanhuy.keepassj"
 
 name := "keepassj"
 
-version := "2.32.0"
+version := "2.34.0-SNAPSHOT"
 
 crossPaths := false
 
@@ -11,7 +11,7 @@ autoScalaLibrary := false
 javacOptions in (Compile,compile) ++= Seq("-source", "1.7", "-target", "1.7")
 
 libraryDependencies ++= Seq(
-  "com.google.guava" % "guava" % "18.0",
+  "com.google.guava" % "guava" % "19.0",
   "junit" % "junit" % "4.12" % "test",
   "org.hamcrest" % "hamcrest-all" % "1.3" % "test",
   "com.novocode" % "junit-interface" % "0.11" % "test",

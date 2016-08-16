@@ -19,6 +19,7 @@ package com.hanhuy.keepassj;
 */
 
 import com.google.common.base.Objects;
+import com.google.common.base.Predicate;
 import com.google.common.collect.Maps;
 
 import java.io.IOException;
@@ -713,36 +714,33 @@ public class PwDatabase
 		MergeIn(pdSource, mm, null);
 	}
 
-	/// <summary>
-	/// Synchronize the current database with another one.
-	/// </summary>
-	/// <param name="pdSource">Input database to synchronize with. This input
-	/// database is used to update the current one, but is not modified! You
-	/// must copy the current object if you want a second instance of the
-	/// synchronized database. The input database must not be seen as valid
-	/// database any more after calling <c>Synchronize</c>.</param>
-	/// <param name="mm">Merge method.</param>
-	/// <param name="slStatus">Logger to report status messages to.
-	/// May be <c>null</c>.</param>
 	public void MergeIn(final PwDatabase pdSource, final PwMergeMethod mm,
 		final IStatusLogger slStatus)
 	{
 		if(pdSource == null) throw new IllegalArgumentException("pdSource");
 
-		PwGroup pgOrgStructure = m_pgRootGroup.CloneStructure();
-		PwGroup pgSrcStructure = pdSource.m_pgRootGroup.CloneStructure();
-
 		if(mm == PwMergeMethod.CreateNewUuids)
 		{
-			pdSource.getRootGroup().CreateNewItemUuids(true, true, true);
 			pdSource.getRootGroup().setUuid(new PwUuid(true));
+			pdSource.getRootGroup().CreateNewItemUuids(true, true, true);
 		}
 
-		GroupHandler gh = new GroupHandler() {
+		// PwGroup pgOrgStructure = m_pgRootGroup.CloneStructure();
+		// PwGroup pgSrcStructure = pdSource.RootGroup.CloneStructure();
+		// Later in case 'if(mm == PwMergeMethod.Synchronize)':
+		// PwObjectPoolEx ppOrg = PwObjectPoolEx.FromGroup(pgOrgStructure);
+		// PwObjectPoolEx ppSrc = PwObjectPoolEx.FromGroup(pgSrcStructure);
+
+		final PwObjectPool.PwObjectPoolEx ppOrg = PwObjectPool.PwObjectPoolEx.FromGroup(m_pgRootGroup);
+		final PwObjectPool.PwObjectPoolEx ppSrc = PwObjectPool.PwObjectPoolEx.FromGroup(pdSource.getRootGroup());
+		GroupHandler ghSrc = new GroupHandler() {
         public boolean delegate(PwGroup pg)
 		{
 			// if(pg == pdSource.m_pgRootGroup) return true;
 
+			// Do not use ppOrg for finding the group, because new groups
+			// might have been added (which are not in the pool, and the
+			// pool should not be modified)
 			PwGroup pgLocal = m_pgRootGroup.FindGroup(pg.getUuid(), true);
 			if(pgLocal == null)
 			{
@@ -766,7 +764,9 @@ public class PwDatabase
 				PwGroup pgNew = new PwGroup(false, false);
 				pgNew.setUuid(pg.getUuid());
 				pgNew.AssignProperties(pg, false, true);
-				pgLocalContainer.AddGroup(pgNew, true);
+				// pgLocalContainer.AddGroup(pgNew, true);
+				InsertObjectAtBestPos(pgLocalContainer.getGroups(), pgNew, ppSrc);
+				pgNew.setParentGroup(pgLocalContainer);
 			}
 			else // pgLocal != null
 			{
@@ -785,10 +785,14 @@ public class PwDatabase
 			return ((slStatus != null) ? slStatus.ContinueWork() : true);
 		}};
 
-		EntryHandler eh = new EntryHandler() {
+		EntryHandler ehSrc = new EntryHandler() {
         public boolean delegate(PwEntry pe)
 		{
-			PwEntry peLocal = m_pgRootGroup.FindEntry(pe.getUuid(), true);
+			// PwEntry peLocal = m_pgRootGroup.FindEntry(pe.Uuid, true);
+			PwEntry peLocal = (PwEntry) ppOrg.GetItemByUuid(pe.getUuid());
+			assert(peLocal ==
+					m_pgRootGroup.FindEntry(pe.getUuid(), true));
+
 			if(peLocal == null)
 			{
 				PwGroup pgSourceParent = pe.getParentGroup();
@@ -802,8 +806,10 @@ public class PwDatabase
 
 				PwEntry peNew = new PwEntry(false, false);
 				peNew.setUuid(pe.getUuid());
-				peNew.AssignProperties(pe, false, true, true);
-				pgLocalContainer.AddEntry(peNew, true);
+
+				// pgLocalContainer.AddEntry(peNew, true);
+				InsertObjectAtBestPos(pgLocalContainer.getEntries(), peNew, ppSrc);
+				peNew.setParentGroup(pgLocalContainer);
 			}
 			else // peLocal != null
 			{
@@ -840,8 +846,8 @@ public class PwDatabase
 			return ((slStatus != null) ? slStatus.ContinueWork() : true);
 		}};
 
-		gh.delegate(pdSource.getRootGroup());
-		if(!pdSource.getRootGroup().TraverseTree(TraversalMethod.PreOrder, gh, eh))
+		ghSrc.delegate(pdSource.getRootGroup());
+		if(!pdSource.getRootGroup().TraverseTree(TraversalMethod.PreOrder, ghSrc, ehSrc))
 			throw new UnsupportedOperationException();
 
 		IStatusLogger slPrevStatus = m_slStatus;
@@ -849,23 +855,25 @@ public class PwDatabase
 
 		if(mm == PwMergeMethod.Synchronize)
 		{
-			ApplyDeletions(pdSource.m_vDeletedObjects, true);
-			ApplyDeletions(m_vDeletedObjects, false);
+			RelocateGroups(ppOrg, ppSrc);
+			RelocateEntries(ppOrg, ppSrc);
+			ReorderObjects(m_pgRootGroup, ppOrg, ppSrc);
 
-			PwObjectPool ppOrgGroups = PwObjectPool.FromGroupRecursive(
-				pgOrgStructure, false);
-			PwObjectPool ppSrcGroups = PwObjectPool.FromGroupRecursive(
-				pgSrcStructure, false);
-			PwObjectPool ppOrgEntries = PwObjectPool.FromGroupRecursive(
-				pgOrgStructure, true);
-			PwObjectPool ppSrcEntries = PwObjectPool.FromGroupRecursive(
-				pgSrcStructure, true);
+			// After all relocations and reorderings
+			MergeInLocationChanged(m_pgRootGroup, ppOrg, ppSrc);
+//			ppOrg = null; // Pools are now invalid, because the location
+//			ppSrc = null; // changed times have been merged in
 
-			RelocateGroups(ppOrgGroups, ppSrcGroups);
-			ReorderGroups(ppOrgGroups, ppSrcGroups);
-			RelocateEntries(ppOrgEntries, ppSrcEntries);
-			ReorderEntries(ppOrgEntries, ppSrcEntries);
-			assert !HasDuplicateUuids();
+			// Delete *after* relocating, because relocating might
+			// empty some groups that are marked for deletion (and
+			// objects that weren't relocated yet might prevent the
+			// deletion)
+			Map<PwUuid, PwDeletedObject> dOrgDel = CreateDeletedObjectsPool();
+			MergeInDeletionInfo(pdSource.m_vDeletedObjects, dOrgDel);
+			ApplyDeletions(m_pgRootGroup, dOrgDel);
+
+			// The list and the dictionary should be kept in sync
+			assert(m_vDeletedObjects.getUCount() == dOrgDel.size());
 		}
 
 		// Must be called *after* merging groups, because group UUIDs
@@ -876,6 +884,7 @@ public class PwDatabase
 
 		MaintainBackups();
 
+		assert(!HasDuplicateUuids());
 		m_slStatus = slPrevStatus;
 	}
 
@@ -890,80 +899,114 @@ public class PwDatabase
 		}
 	}
 
-	private void ApplyDeletions(final PwObjectList<PwDeletedObject> listDelObjects,
-		boolean bCopyDeletionInfoToLocal)
+	private Map<PwUuid, PwDeletedObject> CreateDeletedObjectsPool() {
+		Map<PwUuid, PwDeletedObject> d =
+				new HashMap<PwUuid, PwDeletedObject>();
+
+
+		int n = (int) m_vDeletedObjects.getUCount();
+		for (int i = n - 1; i >= 0; --i) {
+			PwDeletedObject pdo = m_vDeletedObjects.GetAt(i);
+
+			PwDeletedObject pdoEx;
+			if ((pdoEx = d.get(pdo.getUuid())) != null) {
+				assert (false); // Found duplicate, which should not happen
+
+				if (pdo.getDeletionTime().getTime() > pdoEx.getDeletionTime().getTime())
+					pdoEx.setDeletionTime(pdo.getDeletionTime());
+
+				m_vDeletedObjects.RemoveAt(i);
+			} else d.put(pdo.getUuid(), pdo);
+
+		}
+		return d;
+	}
+
+	private void MergeInDeletionInfo(PwObjectList<PwDeletedObject> lSrc,
+									 Map<PwUuid, PwDeletedObject> dOrgDel)
 	{
-		assert listDelObjects != null;
-        if(listDelObjects == null) throw new IllegalArgumentException("listDelObjects");
-
-		final LinkedList<PwGroup> listGroupsToDelete = new LinkedList<PwGroup>();
-		final LinkedList<PwEntry> listEntriesToDelete = new LinkedList<PwEntry>();
-
-		GroupHandler gh = new GroupHandler() { public boolean delegate(PwGroup pg)
+		for(PwDeletedObject pdoSrc : lSrc)
 		{
-			if(pg == m_pgRootGroup) return true;
-
-			for(PwDeletedObject pdo : listDelObjects)
+			PwDeletedObject pdoOrg;
+			if((pdoOrg = dOrgDel.get(pdoSrc.getUuid())) != null) // Update
 			{
-				if(pg.getUuid().Equals(pdo.getUuid()))
-				{
-					if(TimeUtil.Compare(pg.getLastModificationTime(),
-						pdo.getDeletionTime(), true) < 0)
-						listGroupsToDelete.addLast(pg);
-				}
+				assert(pdoOrg.getUuid().Equals(pdoSrc.getUuid()));
+				if(pdoSrc.getDeletionTime().getTime() > pdoOrg.getDeletionTime().getTime())
+					pdoOrg.setDeletionTime(pdoSrc.getDeletionTime());
 			}
-
-			return ((m_slStatus != null) ? m_slStatus.ContinueWork() : true);
-		}};
-
-		EntryHandler eh = new EntryHandler() { public boolean delegate(PwEntry pe)
-		{
-			for(PwDeletedObject pdo : listDelObjects)
+			else // Add
 			{
-				if(pe.getUuid().Equals(pdo.getUuid()))
-				{
-					if(TimeUtil.Compare(pe.getLastModificationTime(),
-						pdo.getDeletionTime(), true) < 0)
-						listEntriesToDelete.addLast(pe);
-				}
-			}
-
-			return ((m_slStatus != null) ? m_slStatus.ContinueWork() : true);
-		}};
-
-		m_pgRootGroup.TraverseTree(TraversalMethod.PreOrder, gh, eh);
-
-		for(PwGroup pg : listGroupsToDelete)
-			pg.getParentGroup().getGroups().Remove(pg);
-		for(PwEntry pe : listEntriesToDelete)
-			pe.getParentGroup().getEntries().Remove(pe);
-
-		if(bCopyDeletionInfoToLocal)
-		{
-			for (PwDeletedObject pdoNew : listDelObjects)
-			{
-				boolean bCopy = true;
-
-				for (PwDeletedObject pdoLocal : m_vDeletedObjects)
-				{
-					if(pdoNew.getUuid().Equals(pdoLocal.getUuid()))
-					{
-						bCopy = false;
-
-						if(pdoNew.getDeletionTime().getTime() > pdoLocal.getDeletionTime().getTime())
-							pdoLocal.setDeletionTime(pdoNew.getDeletionTime());
-
-						break;
-					}
-				}
-
-				if(bCopy) m_vDeletedObjects.Add(pdoNew);
+				m_vDeletedObjects.Add(pdoSrc);
+				dOrgDel.put(pdoSrc.getUuid(), pdoSrc);
 			}
 		}
 	}
 
-	private void RelocateGroups(PwObjectPool ppOrgStructure,
-		PwObjectPool ppSrcStructure)
+	private <T extends IDeepCloneable<T> & IStructureItem> void ApplyDeletions(PwObjectList<T> l, Predicate<T> fCanDelete,
+																			   Map<PwUuid, PwDeletedObject> dOrgDel)
+	{
+		int n = l.getUCount();
+		for(int i = n - 1; i >= 0; --i)
+		{
+			if((m_slStatus != null) && !m_slStatus.ContinueWork()) break;
+
+			T t = l.GetAt(i);
+
+			PwDeletedObject pdo;
+			if((pdo = dOrgDel.get(t.getUuid())) != null)
+			{
+				assert(t.getUuid().Equals(pdo.getUuid()));
+
+				boolean bDel = (TimeUtil.Compare(t.getLastModificationTime(),
+						pdo.getDeletionTime(), true) < 0);
+				bDel &= fCanDelete.apply(t);
+
+				if(bDel) l.RemoveAt(i);
+				else
+				{
+
+					// Prevent future deletion attempts; this also prevents
+					// delayed deletions (emptying a group could cause a
+					// group to be deleted, if the deletion was prevented
+					// before due to the group not being empty)
+					if(!m_vDeletedObjects.Remove(pdo)) { assert(false); }
+					if(dOrgDel.remove(pdo.getUuid()) == null) { assert(false); }
+				}
+			}
+		}
+	}
+	final static Predicate<PwGroup> SafeCanDeleteGroup = new Predicate<PwGroup>() { public boolean apply(PwGroup pg) {
+	{
+		if(pg == null) { assert(false); return false; }
+
+		if(pg.getGroups().getUCount() > 0) return false;
+		if(pg.getEntries().getUCount() > 0) return false;
+		return true;
+	}}};
+
+	final static Predicate<PwEntry> SafeCanDeleteEntry = new Predicate<PwEntry>() { public boolean apply(PwEntry pe) {
+	{
+		if(pe == null) { assert(false); return false; }
+
+		return true;
+	}}};
+
+	// Apply deletions on all objects in the specified container
+	// (but not the container itself), using post-order traversal
+	// to avoid implicit deletions;
+	// https://sourceforge.net/p/keepass/bugs/1499/
+	private void ApplyDeletions(PwGroup pgContainer,
+								Map<PwUuid, PwDeletedObject> dOrgDel)
+	{
+		for(PwGroup pg : pgContainer.getGroups()) // Post-order traversal
+		{
+			ApplyDeletions(pg, dOrgDel);
+		}
+		ApplyDeletions(pgContainer.getGroups(), PwDatabase.SafeCanDeleteGroup, dOrgDel);
+		ApplyDeletions(pgContainer.getEntries(), PwDatabase.SafeCanDeleteEntry, dOrgDel);
+	}
+
+	private void RelocateGroups(PwObjectPool.PwObjectPoolEx ppOrg, PwObjectPool.PwObjectPoolEx ppSrc)
 	{
 		PwObjectList<PwGroup> vGroups = m_pgRootGroup.GetGroups(true);
 
@@ -972,10 +1015,10 @@ public class PwDatabase
 			if((m_slStatus != null) && !m_slStatus.ContinueWork()) break;
 
 			// PwGroup pgOrg = pgOrgStructure.FindGroup(pg.Uuid, true);
-			IStructureItem ptOrg = ppOrgStructure.Get(pg.getUuid());
+			IStructureItem ptOrg = ppOrg.GetItemByUuid(pg.getUuid());
 			if(ptOrg == null) continue;
 			// PwGroup pgSrc = pgSrcStructure.FindGroup(pg.Uuid, true);
-			IStructureItem ptSrc = ppSrcStructure.Get(pg.getUuid());
+			IStructureItem ptSrc = ppSrc.GetItemByUuid(pg.getUuid());
 			if(ptSrc == null) continue;
 
 			PwGroup pgOrgParent = ptOrg.getParentGroup();
@@ -989,8 +1032,8 @@ public class PwDatabase
 
 			if(pgOrgParent.getUuid().Equals(pgSrcParent.getUuid()))
 			{
-				pg.setLocationChanged((ptSrc.getLocationChanged().getTime() > ptOrg.getLocationChanged().getTime()) ?
-					ptSrc.getLocationChanged() : ptOrg.getLocationChanged());
+//				pg.setLocationChanged((ptSrc.getLocationChanged().getTime() > ptOrg.getLocationChanged().getTime()) ?
+//					ptSrc.getLocationChanged() : ptOrg.getLocationChanged());
 				continue;
 			}
 
@@ -1002,8 +1045,12 @@ public class PwDatabase
 				if(pgLocal.IsContainedIn(pg)) continue;
 
 				pg.getParentGroup().getGroups().Remove(pg);
-				pgLocal.AddGroup(pg, true);
-				pg.setLocationChanged(ptSrc.getLocationChanged());
+
+				// pgLocal.AddGroup(pg, true);
+				InsertObjectAtBestPos(pgLocal.getGroups(), pg, ppSrc);
+				pg.setParentGroup(pgLocal);
+
+				// pg.LocationChanged = ptSrc.LocationChanged;
 			}
 			else
 			{
@@ -1015,8 +1062,7 @@ public class PwDatabase
 		assert m_pgRootGroup.GetGroups(true).getUCount() == vGroups.getUCount();
 	}
 
-	private void RelocateEntries(PwObjectPool ppOrgStructure,
-		PwObjectPool ppSrcStructure)
+	private void RelocateEntries(PwObjectPool.PwObjectPoolEx ppOrg, PwObjectPool.PwObjectPoolEx ppSrc)
 	{
 		PwObjectList<PwEntry> vEntries = m_pgRootGroup.GetEntries(true);
 
@@ -1025,18 +1071,18 @@ public class PwDatabase
 			if((m_slStatus != null) && !m_slStatus.ContinueWork()) break;
 
 			// PwEntry peOrg = pgOrgStructure.FindEntry(pe.Uuid, true);
-			IStructureItem ptOrg = ppOrgStructure.Get(pe.getUuid());
+			IStructureItem ptOrg = ppOrg.GetItemByUuid(pe.getUuid());
 			if(ptOrg == null) continue;
 			// PwEntry peSrc = pgSrcStructure.FindEntry(pe.Uuid, true);
-			IStructureItem ptSrc = ppSrcStructure.Get(pe.getUuid());
+			IStructureItem ptSrc = ppSrc.GetItemByUuid(pe.getUuid());
 			if(ptSrc == null) continue;
 
 			PwGroup pgOrg = ptOrg.getParentGroup();
 			PwGroup pgSrc = ptSrc.getParentGroup();
 			if(pgOrg.getUuid().Equals(pgSrc.getUuid()))
 			{
-				pe.setLocationChanged((ptSrc.getLocationChanged().getTime() > ptOrg.getLocationChanged().getTime()) ?
-					ptSrc.getLocationChanged() : ptOrg.getLocationChanged());
+//				pe.setLocationChanged((ptSrc.getLocationChanged().getTime() > ptOrg.getLocationChanged().getTime()) ?
+//					ptSrc.getLocationChanged() : ptOrg.getLocationChanged());
 				continue;
 			}
 
@@ -1046,8 +1092,12 @@ public class PwDatabase
 				if(pgLocal == null) { assert false; continue; }
 
 				pe.getParentGroup().getEntries().Remove(pe);
-				pgLocal.AddEntry(pe, true);
-				pe.setLocationChanged(ptSrc.getLocationChanged());
+
+				// pgLocal.AddEntry(pe, true);
+				InsertObjectAtBestPos(pgLocal.getEntries(), pe, ppSrc);
+				pe.setParentGroup(pgLocal);
+
+				// pe.LocationChanged = ptSrc.LocationChanged;
 			}
 			else
 			{
@@ -1059,251 +1109,298 @@ public class PwDatabase
 		assert m_pgRootGroup.GetEntries(true).getUCount() == vEntries.getUCount();
 	}
 
-	private void ReorderGroups(final PwObjectPool ppOrgStructure,
-		final PwObjectPool ppSrcStructure)
+	private void ReorderObjects(PwGroup pg, PwObjectPool.PwObjectPoolEx ppOrg,
+								PwObjectPool.PwObjectPoolEx ppSrc)
 	{
-		GroupHandler gh = new GroupHandler() { public boolean delegate(PwGroup pg)
-		{
-			ReorderObjectList(pg.getGroups(), ppOrgStructure,
-				ppSrcStructure, false);
-			return true;
-		}};
+		ReorderObjectList(pg.getGroups(), ppOrg, ppSrc);
+		ReorderObjectList(pg.getEntries(), ppOrg, ppSrc);
 
-		ReorderObjectList(m_pgRootGroup.getGroups(), ppOrgStructure,
-			ppSrcStructure, false);
-		m_pgRootGroup.TraverseTree(TraversalMethod.PreOrder, gh, null);
+		for (PwGroup pgSub : pg.getGroups()) {
+			ReorderObjects(pgSub, ppOrg, ppSrc);
+		}
 	}
-
-	private void ReorderEntries(final PwObjectPool ppOrgStructure,
-		final PwObjectPool ppSrcStructure)
-	{
-		GroupHandler gh = new GroupHandler() { public boolean delegate(PwGroup pg)
-		{
-			ReorderObjectList(pg.getEntries(), ppOrgStructure,
-				ppSrcStructure, true);
-			return true;
-		}};
-
-		ReorderObjectList(m_pgRootGroup.getEntries(), ppOrgStructure,
-			ppSrcStructure, true);
-		m_pgRootGroup.TraverseTree(TraversalMethod.PreOrder, gh, null);
+	static class Pair<F,S> {
+		public final F fst;
+		public final S snd;
+		public Pair(F first, S second) {
+		    fst = first; snd = second;
+		}
 	}
-
-	private <T extends IStructureItem & IDeepCloneable<T>> void ReorderObjectList(PwObjectList<T> vItems,
-		PwObjectPool ppOrgStructure, PwObjectPool ppSrcStructure, boolean bEntries)
+	private <T extends IDeepCloneable<T> & IStructureItem> void ReorderObjectList(PwObjectList<T> lItems,
+	PwObjectPool.PwObjectPoolEx ppOrg, PwObjectPool.PwObjectPoolEx ppSrc)
 	{
-		if(!ObjectListRequiresReorder(vItems, ppOrgStructure, ppSrcStructure,
-			bEntries)) return;
 
-		PwObjectList<T> vOrgListItems = vItems.CloneShallow();
+		List<PwObjectPool.PwObjectBlock<T>> lBlocks = PartitionConsec(lItems, ppOrg, ppSrc);
+		if(lBlocks.size() <= 1) return;
+		PwObjectList<T> lOrgItems = lItems.CloneShallow();
 
 
-		Queue<Map.Entry<Integer, Integer>> qToDo = new LinkedList<Map.Entry<Integer, Integer>>();
-		qToDo.add(Maps.immutableEntry(0, vItems.getUCount() - 1));
+		Queue<Pair<Integer, Integer>> qToDo = new LinkedList<Pair<Integer, Integer>>();
+		qToDo.add(new Pair<>(0, lBlocks.size() - 1));
 
 		while(qToDo.size() > 0)
 		{
 			if((m_slStatus != null) && !m_slStatus.ContinueWork()) break;
 
-			Map.Entry<Integer, Integer> kvp = qToDo.poll();
-			if(kvp.getValue() <= kvp.getKey()) { assert false; continue; }
+			Pair<Integer, Integer> kvp = qToDo.poll();
+			if(kvp.snd <= kvp.fst) { assert false; continue; }
 
-			Queue<PwUuid> qRelBefore = new LinkedList<PwUuid>();
-			Queue<PwUuid> qRelAfter = new LinkedList<PwUuid>();
-			int uPivot = FindLocationChangedPivot(vItems, kvp, ppOrgStructure,
-				ppSrcStructure, qRelBefore, qRelAfter, bEntries);
-			T ptPivot = vItems.GetAt(uPivot);
+			PwObjectPool.PwObjectPoolEx[] pPool = new PwObjectPool.PwObjectPoolEx[1];
+			int iPivot = FindLocationChangedPivot(lBlocks, kvp, pPool);
+			PwObjectPool.PwObjectBlock<T> bPivot = lBlocks.get(iPivot);
 
-			List<T> vToSort = vItems.GetRange(kvp.getKey(), kvp.getValue());
-			Queue<T> qBefore = new LinkedList<T>();
-			Queue<T> qAfter = new LinkedList<T>();
+			T tPivotPrimary = bPivot.getPrimaryItem();
+			if(tPivotPrimary == null) { assert(false); continue; }
+			long idPivot = pPool[0].GetIdByUuid(tPivotPrimary.getUuid());
+			if(idPivot == 0) { assert(false); continue; }
+
+			Queue<PwObjectPool.PwObjectBlock<T>> qBefore = new LinkedList<PwObjectPool.PwObjectBlock<T>>();
+			Queue<PwObjectPool.PwObjectBlock<T>> qAfter = new LinkedList<PwObjectPool.PwObjectBlock<T>>();
 			boolean bBefore = true;
 
-			for(T pt : vToSort)
+			for(int i = kvp.fst; i <= kvp.snd; ++i)
 			{
-				if(pt == ptPivot) { bBefore = false; continue; }
+				if(i == iPivot) { bBefore = false; continue; }
 
-				boolean bAdded = false;
-				for(PwUuid puBefore : qRelBefore)
+				PwObjectPool.PwObjectBlock<T> b = lBlocks.get(i);
+				assert(b.getLocationChanged().getTime() <= bPivot.getLocationChanged().getTime());
+
+				T t = b.getPrimaryItem();
+				if(t != null)
 				{
-					if(puBefore.Equals(pt.getUuid()))
+					long idBPri = pPool[0].GetIdByUuid(t.getUuid());
+					if(idBPri > 0)
 					{
-						qBefore.add(pt);
-						bAdded = true;
-						break;
+						if(idBPri < idPivot) qBefore.add(b);
+						else qAfter.add(b);
+
+						continue;
 					}
 				}
-				if(bAdded) continue;
+				else { assert(false); }
 
-				for(PwUuid puAfter : qRelAfter)
-				{
-					if(puAfter.Equals(pt.getUuid()))
-					{
-						qAfter.add(pt);
-						bAdded = true;
-						break;
-					}
-				}
-				if(bAdded) continue;
-
-				if(bBefore) qBefore.add(pt);
-				else qAfter.add(pt);
+				if(bBefore) qBefore.add(b);
+				else qAfter.add(b);
 			}
-			assert bBefore == false;
 
-			int uPos = kvp.getKey();
-			while(qBefore.size() > 0) vItems.SetAt(uPos++, qBefore.poll());
-			vItems.SetAt(uPos++, ptPivot);
-			while(qAfter.size() > 0) vItems.SetAt(uPos++, qAfter.poll());
-			assert uPos == (kvp.getValue() + 1);
+				int j = kvp.fst;
+				while(qBefore.size() > 0) { lBlocks.set(j, qBefore.poll()); ++j; }
+				int iNewPivot = j;
+				lBlocks.set(j, bPivot);
+				++j;
+				while(qAfter.size() > 0) { lBlocks.set(j, qAfter.poll()); ++j; }
+				assert(j == (kvp.snd + 1));
 
-			int iNewPivot = vItems.IndexOf(ptPivot);
-			if((iNewPivot < (int)kvp.getKey()) || (iNewPivot > (int)kvp.getValue()))
+				if((iNewPivot - 1) > kvp.fst)
+					qToDo.add(new Pair<Integer, Integer>(kvp.fst, iNewPivot - 1));
+				if((iNewPivot + 1) < kvp.snd)
+					qToDo.add(new Pair<Integer, Integer>(iNewPivot + 1, kvp.snd));
+			}
+
+			int u = 0;
+		for (PwObjectPool.PwObjectBlock<T> b : lBlocks)
+		{
+			for (T t : b)
 			{
-				assert false;
-				continue;
+			    lItems.SetAt(u, t);
+				++u;
 			}
 
-			if((iNewPivot - 1) > (int)kvp.getKey())
-				qToDo.add(Maps.immutableEntry(kvp.getKey(),
-                        (int) (iNewPivot - 1)));
-
-			if((iNewPivot + 1) < (int)kvp.getValue())
-				qToDo.add(Maps.immutableEntry((int) (iNewPivot + 1),
-                        kvp.getValue()));
 		}
+		assert(u == lItems.getUCount());
 
 if (false) { // debug
-		for(T ptItem : vOrgListItems)
+	    assert(u == lOrgItems.getUCount());
+		for(T ptItem : lOrgItems)
 		{
-			assert vItems.IndexOf(ptItem) >= 0;
+			assert lItems.IndexOf(ptItem) >= 0;
 		}
 }
 	}
 
-	private static <T extends IStructureItem & IDeepCloneable<T>> int FindLocationChangedPivot(PwObjectList<T> vItems,
-		Map.Entry<Integer, Integer> kvpRange, PwObjectPool ppOrgStructure,
-		PwObjectPool ppSrcStructure, Queue<PwUuid> qBefore, Queue<PwUuid> qAfter,
-		boolean bEntries)
+	private static <T extends IDeepCloneable<T> & IStructureItem> List<PwObjectPool.PwObjectBlock<T>> PartitionConsec(PwObjectList<T> lItems,
+																													  PwObjectPool.PwObjectPoolEx ppOrg, PwObjectPool.PwObjectPoolEx ppSrc)
 	{
-		int uPosMax = kvpRange.getKey();
+		List<PwObjectPool.PwObjectBlock<T>> lBlocks = new ArrayList<PwObjectPool.PwObjectBlock<T>>();
+
+		Map<PwUuid, Boolean> dItemUuids = new HashMap<PwUuid, Boolean>();
+		for(T t : lItems) { dItemUuids.put(t.getUuid(), true); }
+
+		int n = lItems.getUCount();
+		for(int u = 0; u < n; ++u)
+		{
+			T t = lItems.GetAt(u);
+			PwObjectPool.PwObjectBlock<T> b = new PwObjectPool.PwObjectBlock<T>();
+
+			Date[] dtLoc = new Date[1];
+			PwObjectPool.PwObjectPoolEx pPool = GetBestPool(t, ppOrg, ppSrc, dtLoc);
+			b.Add(t, dtLoc[0], pPool);
+
+			lBlocks.add(b);
+
+			long idOrg = ppOrg.GetIdByUuid(t.getUuid());
+			long idSrc = ppSrc.GetIdByUuid(t.getUuid());
+			if((idOrg == 0) || (idSrc == 0)) continue;
+
+			for(int x = u + 1; x < n; ++x)
+			{
+			    T tNext = lItems.GetAt(x);
+
+				long idOrgNext = idOrg + 1;
+				while (true)
+				{
+					IStructureItem ptOrg = ppOrg.GetItemById(idOrgNext);
+					if(ptOrg == null) { idOrgNext = 0; break; }
+					if(ptOrg.getUuid().Equals(tNext.getUuid())) break; // Found it
+					if(dItemUuids.containsKey(ptOrg.getUuid())) { idOrgNext = 0; break; }
+					++idOrgNext;
+				}
+				if (idOrgNext == 0) break;
+
+                long idSrcNext = idSrc + 1;
+				while (true)
+				{
+					IStructureItem ptSrc = ppSrc.GetItemById(idSrcNext);
+					if(ptSrc == null) { idSrcNext = 0; break; }
+					if(ptSrc.getUuid().Equals(tNext.getUuid())) break; // Found it
+					if(dItemUuids.containsKey(ptSrc.getUuid())) { idSrcNext = 0; break; }
+					++idSrcNext;
+				}
+				if (idSrcNext == 0) break;
+
+				pPool = GetBestPool(tNext, ppOrg, ppSrc, dtLoc);
+				b.Add(tNext, dtLoc[0], pPool);
+
+				++u;
+				idOrg = idOrgNext;
+				idSrc = idSrcNext;
+			}
+		}
+
+		return lBlocks;
+	}
+
+	private static <T extends IDeepCloneable<T> & IStructureItem> PwObjectPool.PwObjectPoolEx GetBestPool(T t, PwObjectPool.PwObjectPoolEx ppOrg,
+	PwObjectPool.PwObjectPoolEx ppSrc, Date[] dtLoc)
+	{
+		PwObjectPool.PwObjectPoolEx p = null;
+		dtLoc[0] = new Date(0);
+
+		IStructureItem ptOrg = ppOrg.GetItemByUuid(t.getUuid());
+		if(ptOrg != null)
+		{
+			dtLoc[0] = ptOrg.getLocationChanged();
+			p = ppOrg;
+		}
+
+		IStructureItem ptSrc = ppSrc.GetItemByUuid(t.getUuid());
+		if((ptSrc != null) && (ptSrc.getLocationChanged().getTime() > dtLoc[0].getTime()))
+		{
+			dtLoc[0] = ptSrc.getLocationChanged();
+			p = ppSrc;
+		}
+
+		assert(p != null);
+		return p;
+	}
+
+	private static <T extends IDeepCloneable<T> & IStructureItem> int FindLocationChangedPivot(List<PwObjectPool.PwObjectBlock<T>> lBlocks,
+																							   Pair<Integer, Integer> kvpRange, PwObjectPool.PwObjectPoolEx[] pPool)
+	{
+		pPool[0] = null;
+
+		int iPosMax = kvpRange.fst;
 		Date dtMax = new Date(0);
-		List<IStructureItem> vNeighborSrc = null;
 
-		for(int u = kvpRange.getKey(); u <= kvpRange.getValue(); ++u)
+		for(int i = kvpRange.fst; i <= kvpRange.snd; ++i)
 		{
-			T pt = vItems.GetAt(u);
-
-			// IStructureItem ptOrg = pgOrgStructure.FindObject(pt.Uuid, true, bEntries);
-			IStructureItem ptOrg = ppOrgStructure.Get(pt.getUuid());
-			if((ptOrg != null) && (ptOrg.getLocationChanged().getTime() > dtMax.getTime()))
+			PwObjectPool.PwObjectBlock < T > b = lBlocks.get(i);
+			if (b.getLocationChanged().getTime() > dtMax.getTime())
 			{
-				uPosMax = u;
-				dtMax = ptOrg.getLocationChanged(); // No 'continue'
-
-				PwGroup pgParent = ptOrg.getParentGroup();
-				if(pgParent != null)
-					vNeighborSrc = pgParent.GetObjects(false, bEntries);
-				else
-				{
-					assert false; // Org root should be excluded
-					vNeighborSrc = new ArrayList<IStructureItem>();
-					vNeighborSrc.add(ptOrg);
-				}
-			}
-
-			// IStructureItem ptSrc = pgSrcStructure.FindObject(pt.Uuid, true, bEntries);
-			IStructureItem ptSrc = ppSrcStructure.Get(pt.getUuid());
-			if((ptSrc != null) && (ptSrc.getLocationChanged().getTime() > dtMax.getTime()))
-			{
-				uPosMax = u;
-				dtMax = ptSrc.getLocationChanged(); // No 'continue'
-
-				PwGroup pgParent = ptSrc.getParentGroup();
-				if(pgParent != null)
-					vNeighborSrc = pgParent.GetObjects(false, bEntries);
-				else
-				{
-					// pgParent may be null (for the source root group)
-					vNeighborSrc = new ArrayList<IStructureItem>();
-					vNeighborSrc.add(ptSrc);
-				}
+				iPosMax = i;
+				dtMax = b.getLocationChanged();
+				pPool[0] = b.getPoolAssoc();
 			}
 		}
 
-		GetNeighborItems(vNeighborSrc, vItems.GetAt(uPosMax).getUuid(), qBefore, qAfter);
-		return uPosMax;
+		return iPosMax;
 	}
 
-	private static void GetNeighborItems(List<IStructureItem> vItems,
-		PwUuid pwPivot, Queue<PwUuid> qBefore, Queue<PwUuid> qAfter)
+
+
+
+	private static void MergeInLocationChanged(PwGroup pg,
+											   final PwObjectPool.PwObjectPoolEx ppOrg, final PwObjectPool.PwObjectPoolEx ppSrc)
 	{
-		qBefore.clear();
-		qAfter.clear();
+			GroupHandler gh = new GroupHandler() { public boolean delegate(PwGroup pgSub)
+			{
+				Date[] dt = new Date[1];
+				if(GetBestPool(pgSub, ppOrg, ppSrc, dt) != null)
+					pgSub.setLocationChanged(dt[0]);
+				else { assert(false); }
+				return true;
+			}};
 
-		// Checks after clearing the queues
-		if(vItems == null) { assert false; return; } // No throw
+			EntryHandler eh = new EntryHandler() { public boolean delegate(PwEntry pe)
+			{
+				Date[] dt = new Date[1];
+				if(GetBestPool(pe, ppOrg, ppSrc, dt) != null)
+					pe.setLocationChanged(dt[0]);
+				else { assert(false); }
+				return true;
+			}};
 
-		boolean bBefore = true;
-		for(int i = 0; i < vItems.size(); ++i)
-		{
-			PwUuid pw = vItems.get(i).getUuid();
-
-			if(pw.Equals(pwPivot)) bBefore = false;
-			else if(bBefore) qBefore.add(pw);
-			else qAfter.add(pw);
-		}
-		assert !bBefore;
-	}
-
-	/// <summary>
-	/// Method to check whether a reordering is required. This fast test
-	/// allows to skip the reordering routine, resulting in a large
-	/// performance increase.
-	/// </summary>
-	private <T extends IStructureItem & IDeepCloneable<T>> boolean ObjectListRequiresReorder(PwObjectList<T> vItems,
-		PwObjectPool ppOrgStructure, PwObjectPool ppSrcStructure, boolean bEntries)
-	{
-		assert ppOrgStructure.ContainsOnlyType(bEntries ? PwEntry.class : PwGroup.class);
-		assert ppSrcStructure.ContainsOnlyType(bEntries ? PwEntry.class : PwGroup.class);
-		if(vItems.getUCount() <= 1) return false;
-
-		if((m_slStatus != null) && !m_slStatus.ContinueWork()) return false;
-
-		T ptFirst = vItems.GetAt(0);
-		// IStructureItem ptOrg = pgOrgStructure.FindObject(ptFirst.Uuid, true, bEntries);
-		IStructureItem ptOrg = ppOrgStructure.Get(ptFirst.getUuid());
-		if(ptOrg == null) return true;
-		// IStructureItem ptSrc = pgSrcStructure.FindObject(ptFirst.Uuid, true, bEntries);
-		IStructureItem ptSrc = ppSrcStructure.Get(ptFirst.getUuid());
-		if(ptSrc == null) return true;
-
-		if(ptFirst.getParentGroup() == null) { assert false; return true; }
-		PwGroup pgOrgParent = ptOrg.getParentGroup();
-		if(pgOrgParent == null) return true; // Root might be in tree
-		PwGroup pgSrcParent = ptSrc.getParentGroup();
-		if(pgSrcParent == null) return true; // Root might be in tree
-
-		if(!ptFirst.getParentGroup().getUuid().Equals(pgOrgParent.getUuid())) return true;
-		if(!pgOrgParent.getUuid().Equals(pgSrcParent.getUuid())) return true;
-
-		List<IStructureItem> lOrg = pgOrgParent.GetObjects(false, bEntries);
-		List<IStructureItem> lSrc = pgSrcParent.GetObjects(false, bEntries);
-		if(vItems.getUCount() != (int)lOrg.size()) return true;
-		if(lOrg.size() != lSrc.size()) return true;
-
-		for(int u = 0; u < vItems.getUCount(); ++u)
-		{
-			IStructureItem pt = vItems.GetAt(u);
-			assert Objects.equal(pt.getParentGroup(), ptFirst.getParentGroup());
-
-			if(!pt.getUuid().Equals(lOrg.get((int) u).getUuid())) return true;
-			if(!pt.getUuid().Equals(lSrc.get((int) u).getUuid())) return true;
-			if(!pt.getLocationChanged().equals(lOrg.get(u).getLocationChanged())) return true;
-			if(!pt.getLocationChanged().equals(lSrc.get(u).getLocationChanged())) return true;
+			gh.delegate(pg);
+			pg.TraverseTree(TraversalMethod.PreOrder, gh, eh);
 		}
 
-		return false;
+		private static <T extends IDeepCloneable<T> & IStructureItem> void InsertObjectAtBestPos(PwObjectList<T> lItems,
+			T tNew, PwObjectPool.PwObjectPoolEx ppSrc)
+		{
+			if(tNew == null) { assert(false); return; }
+
+			long idSrc = ppSrc.GetIdByUuid(tNew.getUuid());
+			if(idSrc == 0) { assert(false); lItems.Add(tNew); return; }
+
+			final int uIdOffset = 2;
+			Map<PwUuid, Integer> dOrg = new HashMap<PwUuid, Integer>();
+			for(int u = 0; u < lItems.getUCount(); ++u)
+				dOrg.put(lItems.GetAt(u).getUuid(), uIdOffset + u);
+
+			long idSrcNext = idSrc + 1;
+			Integer idOrgNext = 0;
+			while(true)
+			{
+				IStructureItem pNext = ppSrc.GetItemById(idSrcNext);
+				if(pNext == null) break;
+				if((idOrgNext = dOrg.get(pNext.getUuid())) != null) break;
+				++idSrcNext;
+			}
+
+			if(idOrgNext != 0)
+			{
+				lItems.Insert(idOrgNext - uIdOffset, tNew);
+				return;
+			}
+
+			long idSrcPrev = idSrc - 1;
+			Integer idOrgPrev = 0;
+			while(true)
+			{
+				IStructureItem pPrev = ppSrc.GetItemById(idSrcPrev);
+				if(pPrev == null) break;
+				if((idOrgPrev = dOrg.get(pPrev.getUuid())) != null) break;
+				--idSrcPrev;
+			}
+
+			if(idOrgPrev != 0)
+			{
+				lItems.Insert(idOrgPrev + 1 - uIdOffset, tNew);
+				return;
+	///////////////////////////////
+		}
+
+		lItems.Add(tNew);
 	}
 
 	private void MergeInDbProperties(PwDatabase pdSource, PwMergeMethod mm)

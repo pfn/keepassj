@@ -488,6 +488,12 @@ import java.util.zip.GZIPOutputStream;
                 // the history maintenance settings)
                 m_pwDatabase.MaintainBackups(); // Don't mark database as modified
 
+                // Expand the root group, such that in case the user accidently
+                // collapses the root group he can simply reopen the database
+                PwGroup pgRoot = m_pwDatabase.getRootGroup();
+                if(pgRoot != null) pgRoot.setExpanded(true);
+                else { assert(false); }
+
                 m_pbHashOfHeader = null;
             }
 

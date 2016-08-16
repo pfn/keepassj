@@ -574,16 +574,12 @@ public class StrUtil {
         return sb.toString();
     }
 
-    private static Pattern g_rxNaturalSplit = null;
-
+    /*private static Pattern g_rxNaturalSplit = null;
     public static int CompareNaturally(String strX, String strY) {
         assert strX != null;
         if (strX == null) throw new IllegalArgumentException("strX");
         assert strY != null;
         if (strY == null) throw new IllegalArgumentException("strY");
-
-        strX = strX.toLowerCase(); // Case-insensitive comparison
-        strY = strY.toLowerCase();
 
         if (g_rxNaturalSplit == null)
             g_rxNaturalSplit = Pattern.compile("([0-9]+)");
@@ -591,18 +587,18 @@ public class StrUtil {
         String[] vPartsX = g_rxNaturalSplit.split(strX);
         String[] vPartsY = g_rxNaturalSplit.split(strY);
 
-        for (int i = 0; i < Math.min(vPartsX.length, vPartsY.length); ++i) {
+		int n = Math.min(vPartsX.length, vPartsY.length);
+		for(int i = 0; i < n; ++i)
+        {
             String strPartX = vPartsX[i], strPartY = vPartsY[i];
             int iPartCompare;
 
-            long uX = 0, uY = 0;
             try {
-                uX = Long.parseLong(strPartX);
-                uY = Long.parseLong(strPartY);
+                long uX = Long.parseLong(strPartX);
+                long uY = Long.parseLong(strPartY);
                 iPartCompare = uX < uY ? -1 : uX > uY ? 1 : 0;
-            } catch (Exception e) {
-                iPartCompare = strPartX.compareTo(strPartY);
             }
+			catch(Exception) { iPartCompare = string.Compare(strPartX, strPartY, true); }
 
             if (iPartCompare != 0) return iPartCompare;
         }
@@ -610,6 +606,107 @@ public class StrUtil {
         if (vPartsX.length == vPartsY.length) return 0;
         if (vPartsX.length < vPartsY.length) return -1;
         return 1;
+    } */
+		public static int CompareNaturally(String strX, String strY)
+		{
+			assert(strX != null);
+			if(strX == null) throw new IllegalArgumentException("strX");
+			assert(strY != null);
+			if(strY == null) throw new IllegalArgumentException("strY");
+
+			int cX = strX.length();
+			int cY = strY.length();
+			if(cX == 0) return ((cY == 0) ? 0 : -1);
+			if(cY == 0) return 1;
+
+			char chFirstX = strX.charAt(0);
+			char chFirstY = strY.charAt(0);
+			boolean bExpNum = ((chFirstX >= '0') && (chFirstX <= '9'));
+			boolean bExpNumY = ((chFirstY >= '0') && (chFirstY <= '9'));
+			if(bExpNum != bExpNumY) return strX.toLowerCase().compareTo(strY.toLowerCase());
+
+			int pX = 0;
+			int pY = 0;
+			while((pX < cX) && (pY < cY))
+			{
+				assert(((strX.charAt(pX) >= '0') && (strX.charAt(pX) <= '9')) == bExpNum);
+				assert(((strY.charAt(pY) >= '0') && (strY.charAt(pY) <= '9')) == bExpNum);
+
+				int pExclX = pX + 1;
+				while(pExclX < cX)
+				{
+					char ch = strX.charAt(pExclX);
+					boolean bChNum = ((ch >= '0') && (ch <= '9'));
+					if(bChNum != bExpNum) break;
+					++pExclX;
+				}
+
+				int pExclY = pY + 1;
+				while(pExclY < cY)
+				{
+					char ch = strY.charAt(pExclY);
+					boolean bChNum = ((ch >= '0') && (ch <= '9'));
+					if(bChNum != bExpNum) break;
+					++pExclY;
+				}
+
+				String strPartX = strX.substring(pX, pExclX - pX);
+				String strPartY = strY.substring(pY, pExclY - pY);
+
+				boolean bStrCmp = true;
+				if(bExpNum)
+				{
+					// 2^64 - 1 = 18446744073709551615 has length 20
+					if((strPartX.length() <= 19) && (strPartY.length() <= 19))
+					{
+						long uX, uY;
+                        try {
+                            uX = Long.parseLong(strPartX);
+                            uY = Long.parseLong(strPartY);
+                            if (uX < uY) return -1;
+                            if (uX > uY) return 1;
+
+                            bStrCmp = false;
+                        } catch (NumberFormatException e) {
+                                assert(false);
+                        }
+					}
+					else
+					{
+						double dX, dY;
+                        try {
+                            dX = Double.parseDouble(strPartX);
+                            dY = Double.parseDouble(strPartY);
+                            if(dX < dY) return -1;
+                            if(dX > dY) return 1;
+
+                            bStrCmp = false;
+                        }
+                        catch (NumberFormatException e) {
+						    assert(false);
+                        }
+					}
+				}
+				if(bStrCmp)
+				{
+					int c = strPartX.toLowerCase().compareTo(strPartY.toLowerCase());
+					if(c != 0) return c;
+				}
+
+				bExpNum = !bExpNum;
+				pX = pExclX;
+				pY = pExclY;
+			}
+
+			if(pX >= cX)
+			{
+				assert(pX == cX);
+				if(pY >= cY) { assert(pY == cY); return 0; }
+				return -1;
+			}
+
+			assert(pY == cY);
+			return 1;
     }
 
     public static String RemoveAccelerator(String strMenuText) {

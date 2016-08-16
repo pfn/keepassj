@@ -18,6 +18,7 @@ package com.hanhuy.keepassj;
   Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.OutputStream;
 
@@ -30,6 +31,12 @@ public class FileTransactionEx
 		private boolean m_bMadeUnhidden = false;
 
 		private final static String StrTempSuffix = ".tmp";
+
+		private static boolean g_bExtraSafe = false;
+		public void setExtraSafe(boolean b) {
+			g_bExtraSafe = b;
+		}
+		public boolean isExtraSafe() { return g_bExtraSafe; }
 
 		public FileTransactionEx(IOConnectionInfo iocBaseFile)
 		{
@@ -67,7 +74,7 @@ public class FileTransactionEx
 			return IOConnection.OpenWrite(m_iocTemp);
 		}
 
-		public void CommitWrite()
+		public void CommitWrite() throws IOException
 		{
 			if(m_bTransacted) CommitWriteTransaction();
 			else // !m_bTransacted
@@ -76,11 +83,16 @@ public class FileTransactionEx
 			}
 		}
 
-		private void CommitWriteTransaction()
+		private void CommitWriteTransaction() throws IOException
 		{
 			boolean bMadeUnhidden = UrlUtil.UnhideFile(m_iocBase.getPath());
 
 
+			if (g_bExtraSafe)
+			{
+				if(!IOConnection.FileExists(m_iocTemp))
+					throw new FileNotFoundException(m_iocTemp.getPath() + ": file save failed");
+			}
 			if(IOConnection.FileExists(m_iocBase))
 			{
 				IOConnection.DeleteFile(m_iocBase);

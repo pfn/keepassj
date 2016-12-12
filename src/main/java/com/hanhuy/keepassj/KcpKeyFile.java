@@ -147,9 +147,7 @@ import java.io.*;
 
 				return pbKey;
 			}
-			catch(Exception e) { assert false; }
-
-			return null;
+			catch(Exception e) { throw new RuntimeException(e); }
 		}
 
 		/// <summary>

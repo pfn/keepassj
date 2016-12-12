@@ -118,7 +118,7 @@ import java.util.zip.GZIPOutputStream;
 		public static byte[] HexStringToByteArray(String strHex)
 		{
 			if(strHex == null) { assert false; throw new IllegalArgumentException("strHex"); }
-            return BaseEncoding.base16().decode(strHex);
+            return BaseEncoding.base16().decode(strHex.toUpperCase());
 		}
 
 		/// <summary>

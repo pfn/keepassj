@@ -86,6 +86,20 @@ public class Kdb4 {
 	}
 
     @Test
+    public void testV1Keyfile() throws Exception {
+        InputStream is = Kdb4.class.getClassLoader().getResourceAsStream("Old_Key_Sample.kdbx");
+        CompositeKey key = new CompositeKey();
+
+        key.AddUserKey(new KcpPassword("password1"));
+        key.AddUserKey(new KcpKeyFile(new File(Kdb4.class.getClassLoader().getResource("Old_Key.key").toURI()).getAbsolutePath()));
+        PwDatabase db = new PwDatabase();
+        db.setMasterKey(key);
+        KdbxFile kdbx = new KdbxFile(db);
+        kdbx.Load(is, KdbxFormat.Default, null);
+        is.close();
+    }
+
+    @Test
 	public void testNoGzip() throws IOException {
         InputStream is = Kdb4.class.getClassLoader().getResourceAsStream("no-encrypt.kdbx");
 

@@ -1377,7 +1377,7 @@ if (false) { // debug
 				++idSrcNext;
 			}
 
-			if(idOrgNext != 0)
+			if(idOrgNext != null && idOrgNext != 0)
 			{
 				lItems.Insert(idOrgNext - uIdOffset, tNew);
 				return;
@@ -1393,7 +1393,7 @@ if (false) { // debug
 				--idSrcPrev;
 			}
 
-			if(idOrgPrev != 0)
+			if(idOrgPrev != null && idOrgPrev != 0)
 			{
 				lItems.Insert(idOrgPrev + 1 - uIdOffset, tNew);
 				return;
